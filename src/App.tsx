@@ -8,6 +8,7 @@ import MainLayout from "@/components/MainLayout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardHome from "@/pages/DashboardHome";
 import PlaceholderPage from "@/pages/PlaceholderPage";
+import UserManagementPage from "@/pages/UserManagementPage";
 import NotFound from "./pages/NotFound";
 import { ReactNode } from "react";
 
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/activos/conductores" element={<ProtectedRoute><PlaceholderPage title="Ranking de Conductores" subtitle="Performance y cumplimiento" /></ProtectedRoute>} />
             <Route path="/registro/walmart-loa" element={<ProtectedRoute><PlaceholderPage title="Registro Walmart LOA" subtitle="UPSERT por ID de viaje" /></ProtectedRoute>} />
             <Route path="/registro/forecast" element={<ProtectedRoute><PlaceholderPage title="Forecast Contractual" subtitle="Matriz de registro" /></ProtectedRoute>} />
+            <Route path="/usuarios" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

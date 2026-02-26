@@ -1,7 +1,7 @@
 import {
   Home, Brain, Truck, BarChart3, ClipboardList,
   ChevronDown, ShoppingCart, Package, Users, Factory,
-  TrendingUp, Car, Award
+  TrendingUp, Car, Award, Shield
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -190,6 +190,20 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           )}
+        </SidebarGroup>
+
+        {/* Gestión de Usuarios */}
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <NavLink to="/usuarios" activeClassName="bg-sidebar-accent text-primary font-medium">
+                  <Shield className="w-4 h-4 mr-2" />
+                  {!collapsed && <span>Gestión de Usuarios</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
