@@ -12,6 +12,8 @@ import ForecastingPage from "@/pages/ForecastingPage";
 import OperationsClientPage from "@/pages/OperationsClientPage";
 import FleetAlertsPage from "@/pages/FleetAlertsPage";
 import DriverAlertsPage from "@/pages/DriverAlertsPage";
+import WalmartLoaRegistroPage from "@/pages/WalmartLoaRegistroPage";
+import ForecastContractualPage from "@/pages/ForecastContractualPage";
 import PlaceholderPage from "@/pages/PlaceholderPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import NotFound from "./pages/NotFound";
@@ -65,8 +67,8 @@ const App = () => (
             })}
             <Route path="/activos/flota" element={<ProtectedRoute><FleetAlertsPage /></ProtectedRoute>} />
             <Route path="/activos/conductores" element={<ProtectedRoute><DriverAlertsPage /></ProtectedRoute>} />
-            <Route path="/registro/walmart-loa" element={<ProtectedRoute><PlaceholderPage title="Registro Walmart LOA" subtitle="UPSERT por ID de viaje" /></ProtectedRoute>} />
-            <Route path="/registro/forecast" element={<ProtectedRoute><PlaceholderPage title="Forecast Contractual" subtitle="Matriz de registro" /></ProtectedRoute>} />
+            <Route path="/registro/walmart-loa" element={<ProtectedRoute><WalmartLoaRegistroPage /></ProtectedRoute>} />
+            <Route path="/registro/forecast" element={<ProtectedRoute><ForecastContractualPage /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useViajes } from "@/hooks/useViajes";
 import GlobalFiltersPanel from "@/components/GlobalFiltersPanel";
+import ForecastHeatmap from "@/components/ForecastHeatmap";
 import KpiCard from "@/components/KpiCard";
 import { Brain, TrendingUp, DollarSign, BarChart3, Loader2 } from "lucide-react";
 import {
@@ -130,10 +131,11 @@ export default function ForecastingPage() {
             ) : <p className="text-muted-foreground text-center py-10 text-sm">Sin datos</p>}
           </div>
 
+          <ForecastHeatmap />
+
           <div className="card-executive p-4 border-l-4 border-l-primary">
             <p className="text-xs text-muted-foreground">
-              <strong className="text-foreground">Nota:</strong> El modelo Real vs Teórico completo requiere datos del módulo <em>Forecast Contractual</em> (Venta Base Semanal + Monto Extras). 
-              Una vez registrados datos en la matriz de forecast, este dashboard incorporará automáticamente la comparativa con barras apiladas y el Heatmap calendario.
+              <strong className="text-foreground">Nota:</strong> El modelo Real vs Teórico completo se activa al registrar datos en el módulo <em>Forecast Contractual</em> (Planilla de Registro → Forecast Contractual).
             </p>
           </div>
         </>
