@@ -4,7 +4,7 @@ import KpiCard from "@/components/KpiCard";
 import GlobalFiltersPanel from "@/components/GlobalFiltersPanel";
 import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2 } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell
 } from "recharts";
 
@@ -46,16 +46,32 @@ const DashboardHome = () => {
     };
   }, [filteredViajes]);
 
-  const clienteChart = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const v of filteredViajes) map[v.cliente_estandar || "Otros"] = (map[v.cliente_estandar || "Otros"] || 0) + 1;
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8)
-      .map(([name, viajes]) => ({ name: name.length > 14 ? name.slice(0, 14) + "…" : name, viajes }));
+  // Volumen de venta (bars) + cantidad de viajes (line) por cliente
+  const ventaClienteChart = useMemo(() => {
+    const map: Record<string, { venta: number; viajes: number }> = {};
+    for (const v of filteredViajes) {
+      const key = v.cliente_estandar || "Otros";
+      if (!map[key]) map[key] = { venta: 0, viajes: 0 };
+      map[key].venta += v.tarifa_venta || 0;
+      map[key].viajes += 1;
+    }
+    return Object.entries(map)
+      .sort((a, b) => b[1].venta - a[1].venta)
+      .slice(0, 8)
+      .map(([name, d]) => ({
+        name: name.length > 14 ? name.slice(0, 14) + "…" : name,
+        venta: Math.round(d.venta),
+        viajes: d.viajes,
+      }));
   }, [filteredViajes]);
 
   const estadoPie = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const v of filteredViajes) map[v.estado_viaje_estandar || "Sin estado"] = (map[v.estado_viaje_estandar || "Sin estado"] || 0) + 1;
+    for (const v of filteredViajes) {
+      const estado = v.estado_viaje_estandar || "Sin estado";
+      if (estado === "Planificado") continue; // Excluir planificados
+      map[estado] = (map[estado] || 0) + 1;
+    }
     return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
   }, [filteredViajes]);
 
@@ -111,24 +127,34 @@ const DashboardHome = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Venta + Viajes por Cliente */}
             <div className="lg:col-span-2 card-executive p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-1">Viajes por Cliente</h3>
-              <p className="text-xs text-muted-foreground mb-4">Top 8 por volumen</p>
-              {clienteChart.length > 0 ? (
+              <h3 className="text-sm font-semibold text-foreground mb-1">Venta & Viajes por Cliente</h3>
+              <p className="text-xs text-muted-foreground mb-4">Top 8 — Barras: venta · Línea: viajes</p>
+              {ventaClienteChart.length > 0 ? (
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={clienteChart} layout="vertical">
+                  <ComposedChart data={ventaClienteChart} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
-                    <XAxis type="number" stroke="hsl(215, 15%, 55%)" fontSize={12} />
+                    <XAxis type="number" xAxisId="venta" orientation="bottom" stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} />
+                    <XAxis type="number" xAxisId="viajes" orientation="top" stroke="hsl(270, 70%, 60%)" fontSize={11} hide />
                     <YAxis dataKey="name" type="category" stroke="hsl(215, 15%, 55%)" fontSize={11} width={120} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Bar dataKey="viajes" fill="hsl(185, 100%, 50%)" radius={[0, 4, 4, 0]} name="Viajes" />
-                  </BarChart>
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(value: number, name: string) =>
+                        name === "venta" ? [formatCLP(value), "Venta"] : [value, "Viajes"]
+                      }
+                    />
+                    <Bar xAxisId="venta" dataKey="venta" fill="hsl(185, 100%, 50%)" radius={[0, 4, 4, 0]} name="venta" barSize={16} />
+                    <Line xAxisId="viajes" dataKey="viajes" stroke="hsl(270, 70%, 60%)" strokeWidth={2} dot={{ r: 3, fill: "hsl(270, 70%, 60%)" }} name="viajes" />
+                  </ComposedChart>
                 </ResponsiveContainer>
               ) : <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>}
             </div>
+
+            {/* Pie de estados (sin Planificado) */}
             <div className="card-executive p-5">
               <h3 className="text-sm font-semibold text-foreground mb-1">Estado de Viajes</h3>
-              <p className="text-xs text-muted-foreground mb-4">Distribución</p>
+              <p className="text-xs text-muted-foreground mb-4">Distribución (sin Planificado)</p>
               {estadoPie.length > 0 ? (
                 <>
                   <ResponsiveContainer width="100%" height={200}>

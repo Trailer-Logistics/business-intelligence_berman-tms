@@ -31,11 +31,11 @@ interface Viaje {
 interface GlobalFilters {
   dateFrom: string;
   dateTo: string;
-  estadoViaje: string;
-  tipoOperacion: string;
-  tracto: string;
-  rampla: string;
-  codigoCarga: string;
+  estadoViaje: string[];
+  tipoOperacion: string[];
+  tracto: string[];
+  rampla: string[];
+  codigoCarga: string[];
   sentidoViaje: string; // ida | retorno | admin | all
 }
 
@@ -58,11 +58,11 @@ interface ViajesContextType {
 const defaultFilters: GlobalFilters = {
   dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
   dateTo: new Date().toISOString().slice(0, 10),
-  estadoViaje: "",
-  tipoOperacion: "",
-  tracto: "",
-  rampla: "",
-  codigoCarga: "",
+  estadoViaje: [],
+  tipoOperacion: [],
+  tracto: [],
+  rampla: [],
+  codigoCarga: [],
   sentidoViaje: "all",
 };
 
@@ -107,23 +107,21 @@ export function ViajesProvider({ children }: { children: ReactNode }) {
     };
   }, [viajes]);
 
-  // Apply global filters using fecha_salida_origen (REGLA MAESTRA)
   const filteredViajes = useMemo(() => {
     return viajes.filter((v) => {
-      // Date filter on fecha_salida_origen
       if (v.fecha_salida_origen) {
         const d = v.fecha_salida_origen;
         if (filters.dateFrom && d < filters.dateFrom) return false;
         if (filters.dateTo && d > filters.dateTo) return false;
       } else {
-        return false; // skip viajes without fecha_salida_origen
+        return false;
       }
 
-      if (filters.estadoViaje && v.estado_viaje_estandar !== filters.estadoViaje) return false;
-      if (filters.tipoOperacion && v.tipo_operacion !== filters.tipoOperacion) return false;
-      if (filters.tracto && v.patente_tracto !== filters.tracto) return false;
-      if (filters.rampla && v.patente_rampla !== filters.rampla) return false;
-      if (filters.codigoCarga && v.descripcion_carga !== filters.codigoCarga) return false;
+      if (filters.estadoViaje.length > 0 && !filters.estadoViaje.includes(v.estado_viaje_estandar)) return false;
+      if (filters.tipoOperacion.length > 0 && !filters.tipoOperacion.includes(v.tipo_operacion)) return false;
+      if (filters.tracto.length > 0 && !filters.tracto.includes(v.patente_tracto)) return false;
+      if (filters.rampla.length > 0 && !filters.rampla.includes(v.patente_rampla)) return false;
+      if (filters.codigoCarga.length > 0 && !filters.codigoCarga.includes(v.descripcion_carga)) return false;
 
       return true;
     });
