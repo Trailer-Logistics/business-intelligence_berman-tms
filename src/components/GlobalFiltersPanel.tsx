@@ -1,13 +1,19 @@
+import { useState } from "react";
+import { format, parse } from "date-fns";
+import { es } from "date-fns/locale";
 import { useViajes } from "@/hooks/useViajes";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Calendar, Filter, RotateCcw } from "lucide-react";
+import MultiSelectDropdown from "@/components/MultiSelectDropdown";
+import { CalendarIcon, Filter, RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const SENTIDO_OPTIONS = [
-  { value: "all", label: "Todos", color: "text-foreground" },
-  { value: "ida", label: "Ida", color: "text-primary" },
-  { value: "retorno", label: "Retorno", color: "text-violet-accent" },
-  { value: "admin", label: "Admin", color: "text-foreground" },
+  { value: "all", label: "Todos" },
+  { value: "ida", label: "Ida" },
+  { value: "retorno", label: "Retorno" },
+  { value: "admin", label: "Admin" },
 ];
 
 export default function GlobalFiltersPanel() {
@@ -17,14 +23,17 @@ export default function GlobalFiltersPanel() {
     setFilters({
       dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
       dateTo: new Date().toISOString().slice(0, 10),
-      estadoViaje: "",
-      tipoOperacion: "",
-      tracto: "",
-      rampla: "",
-      codigoCarga: "",
+      estadoViaje: [],
+      tipoOperacion: [],
+      tracto: [],
+      rampla: [],
+      codigoCarga: [],
       sentidoViaje: "all",
     });
   };
+
+  const dateFromValue = filters.dateFrom ? parse(filters.dateFrom, "yyyy-MM-dd", new Date()) : undefined;
+  const dateToValue = filters.dateTo ? parse(filters.dateTo, "yyyy-MM-dd", new Date()) : undefined;
 
   return (
     <div className="card-executive p-4 mb-6">
@@ -37,106 +46,131 @@ export default function GlobalFiltersPanel() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        {/* Dates */}
+        {/* Date From */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Desde</label>
-          <Input
-            type="date"
-            value={filters.dateFrom}
-            onChange={(e) => setFilters({ dateFrom: e.target.value })}
-            className="h-8 text-xs"
-          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={cn(
+                "flex h-8 w-full items-center gap-1 rounded-md border border-input bg-background px-2 text-xs",
+                !dateFromValue && "text-muted-foreground"
+              )}>
+                <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                {dateFromValue ? format(dateFromValue, "dd/MM/yy") : "Desde"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateFromValue}
+                onSelect={(d) => d && setFilters({ dateFrom: format(d, "yyyy-MM-dd") })}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
+
+        {/* Date To */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Hasta</label>
-          <Input
-            type="date"
-            value={filters.dateTo}
-            onChange={(e) => setFilters({ dateTo: e.target.value })}
-            className="h-8 text-xs"
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={cn(
+                "flex h-8 w-full items-center gap-1 rounded-md border border-input bg-background px-2 text-xs",
+                !dateToValue && "text-muted-foreground"
+              )}>
+                <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                {dateToValue ? format(dateToValue, "dd/MM/yy") : "Hasta"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateToValue}
+                onSelect={(d) => d && setFilters({ dateTo: format(d, "yyyy-MM-dd") })}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Estado Viaje - Multi */}
+        <div className="space-y-1">
+          <label className="text-[10px] text-muted-foreground uppercase">Estado</label>
+          <MultiSelectDropdown
+            options={uniqueValues.estados}
+            selected={filters.estadoViaje}
+            onChange={(v) => setFilters({ estadoViaje: v })}
+            placeholder="Todos"
           />
         </div>
 
-        {/* Estado Viaje */}
-        <div className="space-y-1">
-          <label className="text-[10px] text-muted-foreground uppercase">Estado</label>
-          <Select value={filters.estadoViaje || "all"} onValueChange={(v) => setFilters({ estadoViaje: v === "all" ? "" : v })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {uniqueValues.estados.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Tipo Operación */}
+        {/* Tipo Operación - Multi */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Operación</label>
-          <Select value={filters.tipoOperacion || "all"} onValueChange={(v) => setFilters({ tipoOperacion: v === "all" ? "" : v })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {uniqueValues.operaciones.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <MultiSelectDropdown
+            options={uniqueValues.operaciones}
+            selected={filters.tipoOperacion}
+            onChange={(v) => setFilters({ tipoOperacion: v })}
+            placeholder="Todos"
+          />
         </div>
 
-        {/* Tracto */}
+        {/* Tracto - Multi */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Tracto</label>
-          <Select value={filters.tracto || "all"} onValueChange={(v) => setFilters({ tracto: v === "all" ? "" : v })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {uniqueValues.tractos.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <MultiSelectDropdown
+            options={uniqueValues.tractos}
+            selected={filters.tracto}
+            onChange={(v) => setFilters({ tracto: v })}
+            placeholder="Todos"
+          />
         </div>
 
-        {/* Rampla */}
+        {/* Rampla - Multi */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Rampla</label>
-          <Select value={filters.rampla || "all"} onValueChange={(v) => setFilters({ rampla: v === "all" ? "" : v })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {uniqueValues.ramplas.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <MultiSelectDropdown
+            options={uniqueValues.ramplas}
+            selected={filters.rampla}
+            onChange={(v) => setFilters({ rampla: v })}
+            placeholder="Todos"
+          />
         </div>
 
-        {/* Código Carga */}
+        {/* Código Carga - Multi */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Carga</label>
-          <Select value={filters.codigoCarga || "all"} onValueChange={(v) => setFilters({ codigoCarga: v === "all" ? "" : v })}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {uniqueValues.cargas.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <MultiSelectDropdown
+            options={uniqueValues.cargas}
+            selected={filters.codigoCarga}
+            onChange={(v) => setFilters({ codigoCarga: v })}
+            placeholder="Todos"
+          />
         </div>
 
-        {/* Sentido del Viaje */}
+        {/* Sentido - Dropdown */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Sentido</label>
-          <div className="flex gap-1">
-            {SENTIDO_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setFilters({ sentidoViaje: opt.value })}
-                className={`flex-1 px-1.5 py-1.5 text-[10px] rounded font-medium transition-all ${
-                  filters.sentidoViaje === opt.value
-                    ? opt.value === "ida" ? "bg-primary text-primary-foreground"
-                      : opt.value === "retorno" ? "bg-violet-accent text-white"
-                      : "bg-secondary text-foreground"
-                    : "bg-secondary/50 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          <Select value={filters.sentidoViaje} onValueChange={(v) => setFilters({ sentidoViaje: v })}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              {SENTIDO_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  <span className={cn(
+                    opt.value === "ida" && "text-primary",
+                    opt.value === "retorno" && "text-[hsl(var(--violet-accent))]"
+                  )}>
+                    {opt.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
