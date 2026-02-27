@@ -47,6 +47,102 @@ export type Database = {
         }
         Relationships: []
       }
+      r_forecast_contractual: {
+        Row: {
+          actualizado_el: string | null
+          cliente_estandar: string
+          forecast_final_contractual: number | null
+          id: string
+          jueves_clp: number | null
+          lunes_clp: number | null
+          martes_clp: number | null
+          mes_proyeccion: string
+          miercoles_clp: number | null
+          monto_extras: number | null
+          monto_total_semanal: number | null
+          sabado_clp: number | null
+          usuario_registro: string | null
+          venta_base_proyectada: number | null
+          viernes_clp: number | null
+        }
+        Insert: {
+          actualizado_el?: string | null
+          cliente_estandar: string
+          forecast_final_contractual?: number | null
+          id?: string
+          jueves_clp?: number | null
+          lunes_clp?: number | null
+          martes_clp?: number | null
+          mes_proyeccion: string
+          miercoles_clp?: number | null
+          monto_extras?: number | null
+          monto_total_semanal?: number | null
+          sabado_clp?: number | null
+          usuario_registro?: string | null
+          venta_base_proyectada?: number | null
+          viernes_clp?: number | null
+        }
+        Update: {
+          actualizado_el?: string | null
+          cliente_estandar?: string
+          forecast_final_contractual?: number | null
+          id?: string
+          jueves_clp?: number | null
+          lunes_clp?: number | null
+          martes_clp?: number | null
+          mes_proyeccion?: string
+          miercoles_clp?: number | null
+          monto_extras?: number | null
+          monto_total_semanal?: number | null
+          sabado_clp?: number | null
+          usuario_registro?: string | null
+          venta_base_proyectada?: number | null
+          viernes_clp?: number | null
+        }
+        Relationships: []
+      }
+      r_registro_walmart_loa: {
+        Row: {
+          creado_el: string | null
+          editado_el: string | null
+          id: string
+          lead_time_hrs: number | null
+          nro_viaje: string | null
+          tiempo_carga_hrs: number | null
+          tiempo_descarga_hrs: number | null
+          tiempo_retorno_hrs: number | null
+          tiempo_total_hrs: number | null
+          usuario_registro: string | null
+          viaje_id: number
+        }
+        Insert: {
+          creado_el?: string | null
+          editado_el?: string | null
+          id?: string
+          lead_time_hrs?: number | null
+          nro_viaje?: string | null
+          tiempo_carga_hrs?: number | null
+          tiempo_descarga_hrs?: number | null
+          tiempo_retorno_hrs?: number | null
+          tiempo_total_hrs?: number | null
+          usuario_registro?: string | null
+          viaje_id: number
+        }
+        Update: {
+          creado_el?: string | null
+          editado_el?: string | null
+          id?: string
+          lead_time_hrs?: number | null
+          nro_viaje?: string | null
+          tiempo_carga_hrs?: number | null
+          tiempo_descarga_hrs?: number | null
+          tiempo_retorno_hrs?: number | null
+          tiempo_total_hrs?: number | null
+          usuario_registro?: string | null
+          viaje_id?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
