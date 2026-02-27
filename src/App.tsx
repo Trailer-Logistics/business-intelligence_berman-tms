@@ -4,9 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ViajesProvider } from "@/hooks/useViajes";
 import MainLayout from "@/components/MainLayout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardHome from "@/pages/DashboardHome";
+import ForecastingPage from "@/pages/ForecastingPage";
+import OperationsClientPage from "@/pages/OperationsClientPage";
+import FleetAlertsPage from "@/pages/FleetAlertsPage";
+import DriverAlertsPage from "@/pages/DriverAlertsPage";
 import PlaceholderPage from "@/pages/PlaceholderPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import NotFound from "./pages/NotFound";
@@ -24,7 +29,11 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
-  return <MainLayout>{children}</MainLayout>;
+  return (
+    <MainLayout>
+      <ViajesProvider>{children}</ViajesProvider>
+    </MainLayout>
+  );
 }
 
 function PublicRoute({ children }: { children: ReactNode }) {
@@ -49,13 +58,13 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/" element={<ProtectedRoute><DashboardHome /></ProtectedRoute>} />
-            <Route path="/forecasting" element={<ProtectedRoute><PlaceholderPage title="Inteligencia Predictiva" subtitle="Forecasting de Demanda" /></ProtectedRoute>} />
+            <Route path="/forecasting" element={<ProtectedRoute><ForecastingPage /></ProtectedRoute>} />
             {operacionesClientes.map(c => {
               const slug = c.toLowerCase().replace(/[\s.]+/g, "-");
-              return <Route key={slug} path={`/operaciones/${slug}`} element={<ProtectedRoute><PlaceholderPage title={`Operaciones: ${c}`} subtitle="Panel de control operacional" /></ProtectedRoute>} />;
+              return <Route key={slug} path={`/operaciones/${slug}`} element={<ProtectedRoute><OperationsClientPage /></ProtectedRoute>} />;
             })}
-            <Route path="/activos/flota" element={<ProtectedRoute><PlaceholderPage title="Utilización de Flota" subtitle="Tractos y Ramplas" /></ProtectedRoute>} />
-            <Route path="/activos/conductores" element={<ProtectedRoute><PlaceholderPage title="Ranking de Conductores" subtitle="Performance y cumplimiento" /></ProtectedRoute>} />
+            <Route path="/activos/flota" element={<ProtectedRoute><FleetAlertsPage /></ProtectedRoute>} />
+            <Route path="/activos/conductores" element={<ProtectedRoute><DriverAlertsPage /></ProtectedRoute>} />
             <Route path="/registro/walmart-loa" element={<ProtectedRoute><PlaceholderPage title="Registro Walmart LOA" subtitle="UPSERT por ID de viaje" /></ProtectedRoute>} />
             <Route path="/registro/forecast" element={<ProtectedRoute><PlaceholderPage title="Forecast Contractual" subtitle="Matriz de registro" /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
