@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useViajes } from "@/hooks/useViajes";
 import KpiCard from "@/components/KpiCard";
 import GlobalFiltersPanel from "@/components/GlobalFiltersPanel";
-import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2, Banknote } from "lucide-react";
+import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2, Banknote, FileCheck, FileX } from "lucide-react";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell
@@ -30,7 +30,7 @@ const DashboardHome = () => {
 
     let onTime = 0, otdEligible = 0, totalKm = 0, totalTarifa = 0;
     for (const v of filteredViajes) {
-      totalKm += v.km_recorridos || 0;
+      totalKm += (v.km_recorridos && v.km_recorridos > 0) ? v.km_recorridos : 0;
       totalTarifa += v.tarifa_venta || 0;
       if (v.ts_entrada_origen_gps && v.ts_entrada_origen_plan) {
         otdEligible++;
@@ -44,6 +44,27 @@ const DashboardHome = () => {
       km: Math.round(totalKm),
       tarifaPromedio: total > 0 ? Math.round(totalTarifa / total) : 0,
       ventaTotal: Math.round(totalTarifa),
+    };
+  }, [filteredViajes]);
+
+  // Prefactura segmentation
+  const prefacturaData = useMemo(() => {
+    let prefacturada = 0, noPrefactura = 0, prefacturadaCount = 0, noPrefacturaCount = 0;
+    for (const v of filteredViajes) {
+      const estado = v.estado_prefactura || "No Prefactura";
+      if (estado === "No Prefactura") {
+        noPrefactura += v.tarifa_venta || 0;
+        noPrefacturaCount++;
+      } else {
+        prefacturada += v.tarifa_venta || 0;
+        prefacturadaCount++;
+      }
+    }
+    return {
+      prefacturada: Math.round(prefacturada),
+      noPrefactura: Math.round(noPrefactura),
+      prefacturadaCount,
+      noPrefacturaCount,
     };
   }, [filteredViajes]);
 
@@ -176,6 +197,26 @@ const DashboardHome = () => {
             />
             <KpiCard title="Km Recorridos" value={formatNumber(kpis.km)} icon={<Route className="w-5 h-5" />} subtitle="Total acumulado" />
             <KpiCard title="Tarifa Promedio" value={formatCLP(kpis.tarifaPromedio)} icon={<DollarSign className="w-5 h-5" />} subtitle="Venta por viaje" />
+          </div>
+
+          {/* Segmentación Prefactura */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <KpiCard
+              title="Venta Prefacturada"
+              value={formatCLP(prefacturaData.prefacturada)}
+              icon={<FileCheck className="w-5 h-5" />}
+              subtitle={`${prefacturaData.prefacturadaCount} viajes prefacturados`}
+              trend="up"
+              change={`${kpis.ventaTotal > 0 ? ((prefacturaData.prefacturada / kpis.ventaTotal) * 100).toFixed(1) : 0}% del total`}
+            />
+            <KpiCard
+              title="Venta No Prefacturada"
+              value={formatCLP(prefacturaData.noPrefactura)}
+              icon={<FileX className="w-5 h-5" />}
+              subtitle={`${prefacturaData.noPrefacturaCount} viajes sin prefactura`}
+              trend="down"
+              change={`${kpis.ventaTotal > 0 ? ((prefacturaData.noPrefactura / kpis.ventaTotal) * 100).toFixed(1) : 0}% del total`}
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
