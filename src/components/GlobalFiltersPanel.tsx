@@ -21,6 +21,21 @@ export default function GlobalFiltersPanel() {
   const [dateFromOpen, setDateFromOpen] = useState(false);
   const [dateToOpen, setDateToOpen] = useState(false);
 
+  const closeDateFrom = useCallback((d: Date | undefined) => {
+    if (d) {
+      setFilters({ dateFrom: format(d, "yyyy-MM-dd") });
+    }
+    // Delay close to avoid popover re-opening from click propagation
+    setTimeout(() => setDateFromOpen(false), 0);
+  }, [setFilters]);
+
+  const closeDateTo = useCallback((d: Date | undefined) => {
+    if (d) {
+      setFilters({ dateTo: format(d, "yyyy-MM-dd") });
+    }
+    setTimeout(() => setDateToOpen(false), 0);
+  }, [setFilters]);
+
   const reset = () => {
     setFilters({
       dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
@@ -65,10 +80,7 @@ export default function GlobalFiltersPanel() {
               <Calendar
                 mode="single"
                 selected={dateFromValue}
-                onSelect={(d) => {
-                  if (d) setFilters({ dateFrom: format(d, "yyyy-MM-dd") });
-                  setDateFromOpen(false);
-                }}
+                onSelect={closeDateFrom}
                 initialFocus
                 className="p-3 pointer-events-auto"
               />
@@ -93,10 +105,7 @@ export default function GlobalFiltersPanel() {
               <Calendar
                 mode="single"
                 selected={dateToValue}
-                onSelect={(d) => {
-                  if (d) setFilters({ dateTo: format(d, "yyyy-MM-dd") });
-                  setDateToOpen(false);
-                }}
+                onSelect={closeDateTo}
                 initialFocus
                 className="p-3 pointer-events-auto"
               />
