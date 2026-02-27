@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useViajes } from "@/hooks/useViajes";
 import KpiCard from "@/components/KpiCard";
 import GlobalFiltersPanel from "@/components/GlobalFiltersPanel";
-import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2 } from "lucide-react";
+import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2, Banknote } from "lucide-react";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell
@@ -26,7 +26,7 @@ const DashboardHome = () => {
 
   const kpis = useMemo(() => {
     const total = filteredViajes.length;
-    if (total === 0) return { total: 0, otd: 0, km: 0, tarifaPromedio: 0 };
+    if (total === 0) return { total: 0, otd: 0, km: 0, tarifaPromedio: 0, ventaTotal: 0 };
 
     let onTime = 0, otdEligible = 0, totalKm = 0, totalTarifa = 0;
     for (const v of filteredViajes) {
@@ -43,10 +43,22 @@ const DashboardHome = () => {
       otd: otdEligible > 0 ? Math.round((onTime / otdEligible) * 100) : 0,
       km: Math.round(totalKm),
       tarifaPromedio: total > 0 ? Math.round(totalTarifa / total) : 0,
+      ventaTotal: Math.round(totalTarifa),
     };
   }, [filteredViajes]);
 
-  // Volumen de venta (bars) + cantidad de viajes (line) por cliente
+  // Compute unique days count for venta promedio diaria
+  const uniqueDays = useMemo(() => {
+    const days = new Set<string>();
+    for (const v of filteredViajes) {
+      if (v.fecha_salida_origen) {
+        const day = typeof v.fecha_salida_origen === "string" ? v.fecha_salida_origen.slice(0, 10) : "";
+        if (day) days.add(day);
+      }
+    }
+    return Math.max(days.size, 1);
+  }, [filteredViajes]);
+
   const ventaClienteChart = useMemo(() => {
     const map: Record<string, { venta: number; viajes: number }> = {};
     for (const v of filteredViajes) {
@@ -62,17 +74,24 @@ const DashboardHome = () => {
         name: name.length > 14 ? name.slice(0, 14) + "…" : name,
         venta: Math.round(d.venta),
         viajes: d.viajes,
+        ventaPromDiaria: Math.round(d.venta / uniqueDays),
       }));
-  }, [filteredViajes]);
+  }, [filteredViajes, uniqueDays]);
 
   const estadoPie = useMemo(() => {
     const map: Record<string, number> = {};
+    let totalCount = 0;
     for (const v of filteredViajes) {
       const estado = v.estado_viaje_estandar || "Sin estado";
-      if (estado === "Planificado") continue; // Excluir planificados
+      if (estado === "Planificado") continue;
       map[estado] = (map[estado] || 0) + 1;
+      totalCount++;
     }
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({
+      name,
+      value,
+      pct: totalCount > 0 ? ((value / totalCount) * 100).toFixed(1) : "0",
+    }));
   }, [filteredViajes]);
 
   const trendData = useMemo(() => {
@@ -94,6 +113,38 @@ const DashboardHome = () => {
     return `$${n}`;
   };
 
+  // Custom tooltip for pie chart with white text and percentage
+  const PieTooltipContent = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const item = payload[0];
+    return (
+      <div style={{
+        background: "hsl(220, 25%, 10%)",
+        border: "1px solid hsl(220, 20%, 18%)",
+        borderRadius: "8px",
+        padding: "8px 12px",
+        fontSize: "12px",
+      }}>
+        <p style={{ color: "#fff", fontWeight: 600, marginBottom: 2 }}>{item.name}</p>
+        <p style={{ color: "#fff" }}>{item.value} viajes — <span style={{ color: item.payload.fill || "hsl(185, 100%, 50%)" }}>{item.payload.pct}%</span></p>
+      </div>
+    );
+  };
+
+  // Custom tooltip for composed chart with venta promedio diaria
+  const ComposedTooltipContent = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const data = payload[0]?.payload;
+    return (
+      <div style={tooltipStyle as any}>
+        <p style={{ fontWeight: 600, marginBottom: 4 }}>{label}</p>
+        <p>Venta: <span style={{ color: "hsl(185, 100%, 50%)" }}>{formatCLP(data?.venta || 0)}</span></p>
+        <p>Viajes: <span style={{ color: "hsl(270, 70%, 60%)" }}>{data?.viajes || 0}</span></p>
+        <p>Venta Prom. Diaria: <span style={{ color: "hsl(40, 95%, 55%)" }}>{formatCLP(data?.ventaPromDiaria || 0)}</span></p>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -112,8 +163,9 @@ const DashboardHome = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <KpiCard title="Total Viajes" value={formatNumber(kpis.total)} icon={<Truck className="w-5 h-5" />} subtitle="Período seleccionado" />
+            <KpiCard title="Venta Total" value={formatCLP(kpis.ventaTotal)} icon={<Banknote className="w-5 h-5" />} subtitle="Ingresos acumulados" />
             <KpiCard
               title="Puntualidad (OTD)"
               value={`${kpis.otd}%`}
@@ -127,25 +179,20 @@ const DashboardHome = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Venta + Viajes por Cliente */}
+            {/* Venta Total vs Cantidad de Viajes — vertical */}
             <div className="lg:col-span-2 card-executive p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-1">Venta & Viajes por Cliente</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-1">Venta Total vs Cantidad de Viajes</h3>
               <p className="text-xs text-muted-foreground mb-4">Top 8 — Barras: venta · Línea: viajes</p>
               {ventaClienteChart.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <ComposedChart data={ventaClienteChart} layout="vertical">
+                <ResponsiveContainer width="100%" height={320}>
+                  <ComposedChart data={ventaClienteChart}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
-                    <XAxis type="number" xAxisId="venta" orientation="bottom" stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} />
-                    <XAxis type="number" xAxisId="viajes" orientation="top" stroke="hsl(270, 70%, 60%)" fontSize={11} hide />
-                    <YAxis dataKey="name" type="category" stroke="hsl(215, 15%, 55%)" fontSize={11} width={120} />
-                    <Tooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(value: number, name: string) =>
-                        name === "venta" ? [formatCLP(value), "Venta"] : [value, "Viajes"]
-                      }
-                    />
-                    <Bar xAxisId="venta" dataKey="venta" fill="hsl(185, 100%, 50%)" radius={[0, 4, 4, 0]} name="venta" barSize={16} />
-                    <Line xAxisId="viajes" dataKey="viajes" stroke="hsl(270, 70%, 60%)" strokeWidth={2} dot={{ r: 3, fill: "hsl(270, 70%, 60%)" }} name="viajes" />
+                    <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={10} angle={-25} textAnchor="end" height={60} />
+                    <YAxis yAxisId="venta" orientation="left" stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} />
+                    <YAxis yAxisId="viajes" orientation="right" stroke="hsl(270, 70%, 60%)" fontSize={11} />
+                    <Tooltip content={<ComposedTooltipContent />} />
+                    <Bar yAxisId="venta" dataKey="venta" fill="hsl(185, 100%, 50%)" radius={[4, 4, 0, 0]} name="venta" barSize={28} />
+                    <Line yAxisId="viajes" dataKey="viajes" stroke="hsl(270, 70%, 60%)" strokeWidth={2} dot={{ r: 4, fill: "hsl(270, 70%, 60%)" }} name="viajes" />
                   </ComposedChart>
                 </ResponsiveContainer>
               ) : <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>}
@@ -162,14 +209,14 @@ const DashboardHome = () => {
                       <Pie data={estadoPie} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
                         {estadoPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                       </Pie>
-                      <Tooltip contentStyle={tooltipStyle} />
+                      <Tooltip content={<PieTooltipContent />} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {estadoPie.map((item, i) => (
                       <div key={item.name} className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                        <span className="text-[10px] text-muted-foreground truncate">{item.name}: {item.value}</span>
+                        <span className="text-[10px] text-muted-foreground truncate">{item.name}: {item.value} ({item.pct}%)</span>
                       </div>
                     ))}
                   </div>
