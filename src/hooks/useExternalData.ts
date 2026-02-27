@@ -26,7 +26,7 @@ export function useExternalData<T = any>({
   enabled = true,
 }: UseExternalDataOptions) {
   return useQuery<T[]>({
-    queryKey: ["external", view, filters, limit, offset],
+    queryKey: ["external", view, JSON.stringify(filters), limit, offset],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("external-query", {
         body: { view, filters, limit, offset },
@@ -37,6 +37,6 @@ export function useExternalData<T = any>({
       return data.data as T[];
     },
     enabled,
-    staleTime: 5 * 60 * 1000, // 5 min cache
+    staleTime: 30 * 1000, // 30s cache for responsive filters
   });
 }
