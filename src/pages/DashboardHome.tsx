@@ -1,222 +1,313 @@
+import { useMemo, useState } from "react";
 import KpiCard from "@/components/KpiCard";
 import TimeFilter from "@/components/TimeFilter";
-import { Truck, DollarSign, Route, Users, AlertTriangle, TrendingUp, Package, Fuel } from "lucide-react";
+import { useExternalData } from "@/hooks/useExternalData";
+import { Truck, DollarSign, Route, Clock, TrendingUp, AlertTriangle, Loader2 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell
 } from "recharts";
 
-const revenueData = [
-  { name: "Lun", real: 4200, teorico: 5000 },
-  { name: "Mar", real: 5100, teorico: 5000 },
-  { name: "Mié", real: 4800, teorico: 5000 },
-  { name: "Jue", real: 5500, teorico: 5000 },
-  { name: "Vie", real: 6200, teorico: 5000 },
-  { name: "Sáb", real: 3100, teorico: 3500 },
+interface Viaje {
+  viaje_id: number;
+  nro_viaje: string;
+  cliente_estandar: string;
+  estado_viaje_estandar: string;
+  terminado: string;
+  km_recorridos: number;
+  tarifa_venta: number;
+  tarifa_costo: number;
+  ts_entrada_origen_plan: string | null;
+  ts_entrada_origen_gps: string | null;
+  fecha_creacion_viaje: string | null;
+  tipo_operacion: string;
+  unidad_negocio: string;
+}
+
+const tooltipStyle = {
+  background: "hsl(220, 25%, 10%)",
+  border: "1px solid hsl(220, 20%, 18%)",
+  borderRadius: "8px",
+  color: "hsl(200, 20%, 90%)",
+  fontSize: "12px",
+};
+
+const PIE_COLORS = [
+  "hsl(185, 100%, 50%)",
+  "hsl(145, 65%, 45%)",
+  "hsl(40, 95%, 55%)",
+  "hsl(220, 90%, 55%)",
+  "hsl(270, 70%, 60%)",
+  "hsl(0, 80%, 55%)",
 ];
 
-const trendData = [
-  { name: "Ene", value: 320 },
-  { name: "Feb", value: 410 },
-  { name: "Mar", value: 380 },
-  { name: "Abr", value: 450 },
-  { name: "May", value: 520 },
-  { name: "Jun", value: 490 },
-];
-
-const fleetPie = [
-  { name: "En ruta", value: 45, color: "hsl(185, 100%, 50%)" },
-  { name: "Disponible", value: 12, color: "hsl(145, 65%, 45%)" },
-  { name: "Mantención", value: 5, color: "hsl(40, 95%, 55%)" },
-  { name: "Fuera servicio", value: 3, color: "hsl(0, 80%, 55%)" },
-];
+function getDateRange(filter: string) {
+  const now = new Date();
+  if (filter === "7d") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 7);
+    return d.toISOString();
+  }
+  if (filter === "mes") {
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  }
+  // año
+  return new Date(now.getFullYear(), 0, 1).toISOString();
+}
 
 const DashboardHome = () => {
+  const [timeFilter, setTimeFilter] = useState("mes");
+
+  const { data: viajes, isLoading } = useExternalData<Viaje>({
+    view: "v_viajes_inteligentes",
+    limit: 5000,
+  });
+
+  // Filter by date range on the client
+  const filteredViajes = useMemo(() => {
+    if (!viajes) return [];
+    const cutoff = getDateRange(timeFilter);
+    return viajes.filter(v => v.fecha_creacion_viaje && v.fecha_creacion_viaje >= cutoff);
+  }, [viajes, timeFilter]);
+
+  // === KPI calculations ===
+  const kpis = useMemo(() => {
+    const total = filteredViajes.length;
+    if (total === 0) return { total: 0, otd: 0, km: 0, tarifaPromedio: 0 };
+
+    // OTD: puntual si ts_entrada_origen_gps <= ts_entrada_origen_plan
+    let onTime = 0;
+    let otdEligible = 0;
+    let totalKm = 0;
+    let totalTarifa = 0;
+
+    for (const v of filteredViajes) {
+      totalKm += v.km_recorridos || 0;
+      totalTarifa += v.tarifa_venta || 0;
+
+      if (v.ts_entrada_origen_gps && v.ts_entrada_origen_plan) {
+        otdEligible++;
+        if (v.ts_entrada_origen_gps <= v.ts_entrada_origen_plan) {
+          onTime++;
+        }
+      }
+    }
+
+    return {
+      total,
+      otd: otdEligible > 0 ? Math.round((onTime / otdEligible) * 100) : 0,
+      km: Math.round(totalKm),
+      tarifaPromedio: total > 0 ? Math.round(totalTarifa / total) : 0,
+    };
+  }, [filteredViajes]);
+
+  // === Chart: viajes por cliente (top 8) ===
+  const clienteChart = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const v of filteredViajes) {
+      const c = v.cliente_estandar || "Otros";
+      map[c] = (map[c] || 0) + 1;
+    }
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, viajes]) => ({ name: name.length > 14 ? name.slice(0, 14) + "…" : name, viajes }));
+  }, [filteredViajes]);
+
+  // === Chart: estado viaje pie ===
+  const estadoPie = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const v of filteredViajes) {
+      const e = v.estado_viaje_estandar || "Sin estado";
+      map[e] = (map[e] || 0) + 1;
+    }
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, value]) => ({ name, value }));
+  }, [filteredViajes]);
+
+  // === Chart: tendencia diaria ===
+  const trendData = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const v of filteredViajes) {
+      if (v.fecha_creacion_viaje) {
+        const day = v.fecha_creacion_viaje.slice(0, 10);
+        map[day] = (map[day] || 0) + 1;
+      }
+    }
+    return Object.entries(map)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-30) // last 30 days max
+      .map(([date, count]) => ({
+        name: date.slice(5), // MM-DD
+        viajes: count,
+      }));
+  }, [filteredViajes]);
+
+  const formatNumber = (n: number) => n.toLocaleString("es-CL");
+  const formatCLP = (n: number) => {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+    return `$${n}`;
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard <span className="text-primary">General</span></h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Dashboard <span className="text-primary">General</span>
+          </h1>
           <p className="text-sm text-muted-foreground">Resumen operacional en tiempo real</p>
         </div>
-        <TimeFilter onFilterChange={() => {}} />
+        <TimeFilter onFilterChange={setTimeFilter} />
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          title="Viajes Completados"
-          value="1,247"
-          change="+12.5%"
-          trend="up"
-          icon={<Truck className="w-5 h-5" />}
-          subtitle="vs. mes anterior"
-        />
-        <KpiCard
-          title="Facturación Bruta"
-          value="$482M"
-          change="+8.3%"
-          trend="up"
-          icon={<DollarSign className="w-5 h-5" />}
-          subtitle="CLP acumulado"
-        />
-        <KpiCard
-          title="Km Recorridos"
-          value="89,420"
-          change="-2.1%"
-          trend="down"
-          icon={<Route className="w-5 h-5" />}
-          subtitle="Total mes actual"
-        />
-        <KpiCard
-          title="Flota Activa"
-          value="57/65"
-          change="87.7%"
-          trend="neutral"
-          icon={<Package className="w-5 h-5" />}
-          subtitle="Tasa de utilización"
-        />
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Revenue Chart */}
-        <div className="lg:col-span-2 card-executive p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Real vs Teórico</h3>
-              <p className="text-xs text-muted-foreground">Comparativa de venta semanal</p>
-            </div>
-            <TimeFilter onFilterChange={() => {}} />
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
-              <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={12} />
-              <YAxis stroke="hsl(215, 15%, 55%)" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(220, 25%, 10%)",
-                  border: "1px solid hsl(220, 20%, 18%)",
-                  borderRadius: "8px",
-                  color: "hsl(200, 20%, 90%)",
-                  fontSize: "12px"
-                }}
-              />
-              <Bar dataKey="real" fill="hsl(185, 100%, 50%)" radius={[4, 4, 0, 0]} name="Real" />
-              <Bar dataKey="teorico" fill="hsl(220, 90%, 55%)" radius={[4, 4, 0, 0]} opacity={0.4} name="Teórico" />
-            </BarChart>
-          </ResponsiveContainer>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <span className="ml-3 text-muted-foreground text-sm">Cargando datos…</span>
         </div>
+      ) : (
+        <>
+          {/* KPI Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard
+              title="Total Viajes"
+              value={formatNumber(kpis.total)}
+              icon={<Truck className="w-5 h-5" />}
+              subtitle={`Período: ${timeFilter === "7d" ? "últimos 7 días" : timeFilter === "mes" ? "mes actual" : "año actual"}`}
+            />
+            <KpiCard
+              title="Puntualidad (OTD)"
+              value={`${kpis.otd}%`}
+              trend={kpis.otd >= 80 ? "up" : kpis.otd >= 60 ? "neutral" : "down"}
+              change={kpis.otd >= 80 ? "Óptimo" : kpis.otd >= 60 ? "Aceptable" : "Crítico"}
+              icon={<Clock className="w-5 h-5" />}
+              subtitle="GPS ≤ Planificado en origen"
+            />
+            <KpiCard
+              title="Km Recorridos"
+              value={formatNumber(kpis.km)}
+              icon={<Route className="w-5 h-5" />}
+              subtitle="Total acumulado"
+            />
+            <KpiCard
+              title="Tarifa Promedio"
+              value={formatCLP(kpis.tarifaPromedio)}
+              icon={<DollarSign className="w-5 h-5" />}
+              subtitle="Venta por viaje"
+            />
+          </div>
 
-        {/* Fleet Pie */}
-        <div className="card-executive p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Estado de Flota</h3>
-          <p className="text-xs text-muted-foreground mb-4">Distribución actual</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={fleetPie}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={80}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                {fleetPie.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(220, 25%, 10%)",
-                  border: "1px solid hsl(220, 20%, 18%)",
-                  borderRadius: "8px",
-                  color: "hsl(200, 20%, 90%)",
-                  fontSize: "12px"
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            {fleetPie.map((item) => (
-              <div key={item.name} className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />
-                <span className="text-[10px] text-muted-foreground">{item.name}: {item.value}</span>
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Viajes por cliente */}
+            <div className="lg:col-span-2 card-executive p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Viajes por Cliente</h3>
+                <p className="text-xs text-muted-foreground">Top 8 clientes por volumen</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Trend + Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Trend */}
-        <div className="card-executive p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Tendencia de Viajes</h3>
-              <p className="text-xs text-muted-foreground">Últimos 6 meses</p>
+              {clienteChart.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={clienteChart} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
+                    <XAxis type="number" stroke="hsl(215, 15%, 55%)" fontSize={12} />
+                    <YAxis dataKey="name" type="category" stroke="hsl(215, 15%, 55%)" fontSize={11} width={120} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="viajes" fill="hsl(185, 100%, 50%)" radius={[0, 4, 4, 0]} name="Viajes" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>
+              )}
             </div>
-            <TrendingUp className="w-4 h-4 text-primary" />
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={trendData}>
-              <defs>
-                <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(185, 100%, 50%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(185, 100%, 50%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
-              <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={12} />
-              <YAxis stroke="hsl(215, 15%, 55%)" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(220, 25%, 10%)",
-                  border: "1px solid hsl(220, 20%, 18%)",
-                  borderRadius: "8px",
-                  color: "hsl(200, 20%, 90%)",
-                  fontSize: "12px"
-                }}
-              />
-              <Area type="monotone" dataKey="value" stroke="hsl(185, 100%, 50%)" fill="url(#cyanGrad)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
 
-        {/* Alerts */}
-        <div className="card-executive p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Alertas Activas</h3>
-              <p className="text-xs text-muted-foreground">Requieren atención</p>
+            {/* Estado Pie */}
+            <div className="card-executive p-5">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Estado de Viajes</h3>
+              <p className="text-xs text-muted-foreground mb-4">Distribución actual</p>
+              {estadoPie.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={estadoPie}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={80}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {estadoPie.map((_, i) => (
+                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={tooltipStyle} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {estadoPie.map((item, i) => (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
+                        />
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          {item.name}: {item.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>
+              )}
             </div>
-            <AlertTriangle className="w-4 h-4 text-warning" />
           </div>
-          <div className="space-y-3">
-            {[
-              { msg: "Tracto T-042 excede horas de servicio", level: "high", time: "Hace 2h" },
-              { msg: "Rampla R-019 mantención programada", level: "medium", time: "Hace 5h" },
-              { msg: "Conductor J. Pérez sin descanso reglamentario", level: "high", time: "Hace 8h" },
-              { msg: "Walmart LOA: demora en carga", level: "low", time: "Hace 12h" },
-            ].map((alert, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
-                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                  alert.level === "high" ? "bg-destructive" :
-                  alert.level === "medium" ? "bg-warning" : "bg-primary"
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-foreground">{alert.msg}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{alert.time}</p>
+
+          {/* Trend */}
+          <div className="grid grid-cols-1 gap-4">
+            <div className="card-executive p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Tendencia de Viajes</h3>
+                  <p className="text-xs text-muted-foreground">Volumen diario</p>
                 </div>
+                <TrendingUp className="w-4 h-4 text-primary" />
               </div>
-            ))}
+              {trendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={trendData}>
+                    <defs>
+                      <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(185, 100%, 50%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(185, 100%, 50%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
+                    <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={11} />
+                    <YAxis stroke="hsl(215, 15%, 55%)" fontSize={12} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Area
+                      type="monotone"
+                      dataKey="viajes"
+                      stroke="hsl(185, 100%, 50%)"
+                      fill="url(#cyanGrad)"
+                      strokeWidth={2}
+                      name="Viajes"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-10">Sin datos en el período</p>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };
