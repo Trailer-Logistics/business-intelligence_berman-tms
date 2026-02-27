@@ -37,6 +37,7 @@ export function useExternalData<T = any>({
       return data.data as T[];
     },
     enabled,
-    staleTime: 30 * 1000, // 30s cache for responsive filters
+    staleTime: 10 * 1000, // 10s cache for responsive filters
+    refetchOnWindowFocus: false,
   });
 }
