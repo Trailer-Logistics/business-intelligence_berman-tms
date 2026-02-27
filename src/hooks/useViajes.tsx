@@ -71,9 +71,20 @@ const ViajesContext = createContext<ViajesContextType | undefined>(undefined);
 export function ViajesProvider({ children }: { children: ReactNode }) {
   const [filters, setFiltersState] = useState<GlobalFilters>(defaultFilters);
 
+  const queryFilters = useMemo(() => {
+    const f: Record<string, any> = {};
+    if (filters.dateFrom) f.fecha_salida_origen = { op: "gte", value: filters.dateFrom };
+    if (filters.dateTo) {
+      // Use a separate key for the upper bound
+      f["fecha_salida_origen@lte"] = { op: "lte", value: filters.dateTo, column: "fecha_salida_origen" };
+    }
+    return f;
+  }, [filters.dateFrom, filters.dateTo]);
+
   const { data: viajes = [], isLoading } = useExternalData<Viaje>({
     view: "v_viajes_inteligentes",
-    limit: 5000,
+    filters: queryFilters,
+    limit: 50000,
   });
 
   const setFilters = (partial: Partial<GlobalFilters>) => {

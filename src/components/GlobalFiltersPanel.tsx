@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { useViajes } from "@/hooks/useViajes";
@@ -18,6 +18,8 @@ const SENTIDO_OPTIONS = [
 
 export default function GlobalFiltersPanel() {
   const { filters, setFilters, uniqueValues } = useViajes();
+  const [dateFromOpen, setDateFromOpen] = useState(false);
+  const [dateToOpen, setDateToOpen] = useState(false);
 
   const reset = () => {
     setFilters({
@@ -49,7 +51,7 @@ export default function GlobalFiltersPanel() {
         {/* Date From */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Desde</label>
-          <Popover>
+          <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
             <PopoverTrigger asChild>
               <button className={cn(
                 "flex h-8 w-full items-center gap-1 rounded-md border border-input bg-background px-2 text-xs",
@@ -63,7 +65,10 @@ export default function GlobalFiltersPanel() {
               <Calendar
                 mode="single"
                 selected={dateFromValue}
-                onSelect={(d) => d && setFilters({ dateFrom: format(d, "yyyy-MM-dd") })}
+                onSelect={(d) => {
+                  if (d) setFilters({ dateFrom: format(d, "yyyy-MM-dd") });
+                  setDateFromOpen(false);
+                }}
                 initialFocus
                 className="p-3 pointer-events-auto"
               />
@@ -74,7 +79,7 @@ export default function GlobalFiltersPanel() {
         {/* Date To */}
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Hasta</label>
-          <Popover>
+          <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
             <PopoverTrigger asChild>
               <button className={cn(
                 "flex h-8 w-full items-center gap-1 rounded-md border border-input bg-background px-2 text-xs",
@@ -88,7 +93,10 @@ export default function GlobalFiltersPanel() {
               <Calendar
                 mode="single"
                 selected={dateToValue}
-                onSelect={(d) => d && setFilters({ dateTo: format(d, "yyyy-MM-dd") })}
+                onSelect={(d) => {
+                  if (d) setFilters({ dateTo: format(d, "yyyy-MM-dd") });
+                  setDateToOpen(false);
+                }}
                 initialFocus
                 className="p-3 pointer-events-auto"
               />

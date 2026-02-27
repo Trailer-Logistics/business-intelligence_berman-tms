@@ -77,7 +77,9 @@ serve(async (req) => {
 
     // Apply optional filters: { column: value } or { column: { op: "gte", value: "2024-01-01" } }
     if (filters && typeof filters === "object") {
-      for (const [col, condition] of Object.entries(filters)) {
+      for (const [key, condition] of Object.entries(filters)) {
+        // Support keys like "column@op" for multiple filters on same column
+        const col = key.includes("@") ? (condition as any)?.column || key.split("@")[0] : key;
         if (condition && typeof condition === "object" && "op" in (condition as any)) {
           const { op, value } = condition as { op: string; value: any };
           query = query.filter(col, op, value);
