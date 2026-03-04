@@ -1,7 +1,6 @@
 import {
-  Home, Brain, Truck, BarChart3, ClipboardList,
-  ChevronDown, ShoppingCart, Package, Users, Factory,
-  TrendingUp, Car, Award, Shield
+  Home, Brain, Truck, ChevronDown, ShoppingCart, Package, Users, Factory,
+  TrendingUp, Car, Award, Shield, ClipboardList
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -11,11 +10,11 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -35,7 +34,6 @@ export function AppSidebar() {
   });
 
   const toggle = (key: string) => setOpenSections(p => ({ ...p, [key]: !p[key] }));
-  const isActive = (path: string) => location.pathname === path;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -53,9 +51,9 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-3">
-        {/* Home */}
         <SidebarGroup>
           <SidebarMenu>
+            {/* Home */}
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <NavLink to="/" end activeClassName="bg-sidebar-accent text-primary font-medium">
@@ -64,12 +62,8 @@ export function AppSidebar() {
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
 
-        {/* Inteligencia Predictiva */}
-        <SidebarGroup>
-          <SidebarMenu>
+            {/* Inteligencia Predictiva */}
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <NavLink to="/forecasting" activeClassName="bg-sidebar-accent text-primary font-medium">
@@ -78,26 +72,24 @@ export function AppSidebar() {
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
 
-        {/* Operaciones */}
-        <SidebarGroup>
-          <SidebarGroupLabel
-            className="cursor-pointer flex items-center justify-between hover:text-primary transition-colors"
-            onClick={() => toggle("operaciones")}
-          >
-            {!collapsed && (
-              <>
-                <span>Operaciones</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${openSections.operaciones ? "rotate-180" : ""}`} />
-              </>
-            )}
-            {collapsed && <Factory className="w-4 h-4 mx-auto" />}
-          </SidebarGroupLabel>
-          {openSections.operaciones && !collapsed && (
-            <SidebarGroupContent>
-              <SidebarMenu>
+            {/* Operaciones - collapsible */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => toggle("operaciones")}
+                className="cursor-pointer"
+              >
+                <Factory className="w-4 h-4 mr-2" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 text-left">Operaciones</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${openSections.operaciones ? "rotate-180" : ""}`} />
+                  </>
+                )}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {openSections.operaciones && !collapsed && (
+              <div className="ml-4 border-l border-sidebar-border pl-2">
                 {operacionesClientes.map((cliente) => {
                   const slug = cliente.toLowerCase().replace(/[\s.]+/g, "-");
                   return (
@@ -111,28 +103,26 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   );
                 })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* Gestión de Activos */}
-        <SidebarGroup>
-          <SidebarGroupLabel
-            className="cursor-pointer flex items-center justify-between hover:text-primary transition-colors"
-            onClick={() => toggle("activos")}
-          >
-            {!collapsed && (
-              <>
-                <span>Gestión de Activos</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${openSections.activos ? "rotate-180" : ""}`} />
-              </>
+              </div>
             )}
-            {collapsed && <Package className="w-4 h-4 mx-auto" />}
-          </SidebarGroupLabel>
-          {openSections.activos && !collapsed && (
-            <SidebarGroupContent>
-              <SidebarMenu>
+
+            {/* Gestión de Activos - collapsible */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => toggle("activos")}
+                className="cursor-pointer"
+              >
+                <Package className="w-4 h-4 mr-2" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 text-left">Gestión de Activos</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${openSections.activos ? "rotate-180" : ""}`} />
+                  </>
+                )}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {openSections.activos && !collapsed && (
+              <div className="ml-4 border-l border-sidebar-border pl-2">
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/activos/flota" activeClassName="bg-sidebar-accent text-primary font-medium">
@@ -149,28 +139,26 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* Planilla de Registro */}
-        <SidebarGroup>
-          <SidebarGroupLabel
-            className="cursor-pointer flex items-center justify-between hover:text-primary transition-colors"
-            onClick={() => toggle("planilla")}
-          >
-            {!collapsed && (
-              <>
-                <span>Planilla de Registro</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${openSections.planilla ? "rotate-180" : ""}`} />
-              </>
+              </div>
             )}
-            {collapsed && <ClipboardList className="w-4 h-4 mx-auto" />}
-          </SidebarGroupLabel>
-          {openSections.planilla && !collapsed && (
-            <SidebarGroupContent>
-              <SidebarMenu>
+
+            {/* Planilla de Registro - collapsible */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => toggle("planilla")}
+                className="cursor-pointer"
+              >
+                <ClipboardList className="w-4 h-4 mr-2" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 text-left">Planilla de Registro</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${openSections.planilla ? "rotate-180" : ""}`} />
+                  </>
+                )}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {openSections.planilla && !collapsed && (
+              <div className="ml-4 border-l border-sidebar-border pl-2">
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/registro/walmart-loa" activeClassName="bg-sidebar-accent text-primary font-medium">
@@ -187,25 +175,25 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* Gestión de Usuarios */}
-        <SidebarGroup>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <NavLink to="/usuarios" activeClassName="bg-sidebar-accent text-primary font-medium">
-                  <Shield className="w-4 h-4 mr-2" />
-                  {!collapsed && <span>Gestión de Usuarios</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+              </div>
+            )}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Gestión de Usuarios at bottom */}
+      <SidebarFooter className="px-2 py-3 border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <NavLink to="/usuarios" activeClassName="bg-sidebar-accent text-primary font-medium">
+                <Shield className="w-4 h-4 mr-2" />
+                {!collapsed && <span>Gestión de Usuarios</span>}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
