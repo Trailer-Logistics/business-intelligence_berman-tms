@@ -55,14 +55,18 @@ export default function ForecastingPage() {
         }
       }
     }
-    return Object.entries(map)
+    const sorted = Object.entries(map)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-30)
-      .map(([date, { real, count }]) => ({
+      .slice(-30);
+    let acc = 0;
+    return sorted.map(([date, { real, count }]) => {
+      acc += real;
+      return {
         name: date.slice(5),
-        real: Math.round(real),
+        real: Math.round(acc),
         viajes: count,
-      }));
+      };
+    });
   }, [filteredViajes]);
 
   const totalReal = useMemo(() => {
