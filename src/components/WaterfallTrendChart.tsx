@@ -60,25 +60,29 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
     const sliced = sorted.slice(-maxItems);
 
     // Build waterfall: each bar shows the delta from previous period
-    const result: { name: string; value: number; start: number; end: number; isPositive: boolean }[] = [];
+    const result: { name: string; value: number; realValue: number; start: number; end: number; isPositive: boolean; pct: number }[] = [];
     let cumulative = 0;
 
     for (let i = 0; i < sliced.length; i++) {
       const [key, val] = sliced[i];
-      const delta = i === 0 ? val : val - (sliced[i - 1]?.[1] || 0);
+      const prevVal = i === 0 ? 0 : (sliced[i - 1]?.[1] || 0);
+      const delta = i === 0 ? val : val - prevVal;
+      const pct = i === 0 ? 0 : prevVal !== 0 ? ((delta / prevVal) * 100) : 0;
       const start = cumulative;
       cumulative += delta;
 
       let label = key;
-      if (granularity === "day") label = key.slice(5); // MM-DD
-      else if (granularity === "month") label = key.slice(2); // YY-MM
+      if (granularity === "day") label = key.slice(5);
+      else if (granularity === "month") label = key.slice(2);
 
       result.push({
         name: label,
         value: delta,
+        realValue: val,
         start: Math.min(start, cumulative),
         end: Math.max(start, cumulative),
         isPositive: delta >= 0,
+        pct,
       });
     }
 
@@ -88,15 +92,18 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     const d = payload[0]?.payload;
+    const deltaLabel = metric === "venta" ? formatCLP(d?.value || 0) : d?.value?.toLocaleString("es-CL");
+    const realLabel = metric === "venta" ? formatCLP(d?.realValue || 0) : d?.realValue?.toLocaleString("es-CL");
+    const pctLabel = d?.pct !== undefined ? `${d.pct >= 0 ? "+" : ""}${d.pct.toFixed(1)}%` : "—";
+    const deltaColor = d?.isPositive ? "hsl(145, 65%, 45%)" : "hsl(0, 80%, 55%)";
     return (
       <div style={tooltipStyle}>
         <p style={{ fontWeight: 600, marginBottom: 4 }}>{label}</p>
+        <p>Valor real: <span style={{ color: "hsl(185, 80%, 55%)" }}>{realLabel}</span></p>
         <p>
-          Δ {metric === "venta" ? "Venta" : "Viajes"}:{" "}
-          <span style={{ color: d?.isPositive ? "hsl(145, 65%, 45%)" : "hsl(0, 80%, 55%)" }}>
-            {metric === "venta" ? formatCLP(d?.value || 0) : d?.value?.toLocaleString("es-CL")}
-          </span>
+          Δ {metric === "venta" ? "$" : "Cant."}: <span style={{ color: deltaColor }}>{deltaLabel}</span>
         </p>
+        <p>Variación %: <span style={{ color: deltaColor }}>{pctLabel}</span></p>
       </div>
     );
   };
@@ -107,11 +114,10 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
 
   return (
     <div className="card-executive p-5">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Tendencia de Viajes</h3>
-          <p className="text-xs text-muted-foreground">Cascada — variación entre períodos</p>
-          <div className="flex gap-1 mt-2">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <h3 className="text-sm font-semibold text-foreground whitespace-nowrap">Tendencia de Viajes</h3>
+          <div className="flex gap-1">
             <button className={`${btnBase} ${metric === "viajes" ? btnActive : btnInactive}`} onClick={() => setMetric("viajes")}>
               Viajes
             </button>
