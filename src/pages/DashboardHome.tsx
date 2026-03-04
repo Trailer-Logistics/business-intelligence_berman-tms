@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useViajes } from "@/hooks/useViajes";
 import KpiCard from "@/components/KpiCard";
 import GlobalFiltersPanel from "@/components/GlobalFiltersPanel";
-import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2, Banknote, FileCheck, FileX } from "lucide-react";
+import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2, Banknote, FileCheck, FileX, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell
@@ -48,25 +49,47 @@ const DashboardHome = () => {
   }, [filteredViajes]);
 
   // Prefactura segmentation
-  const prefacturaData = useMemo(() => {
+  const { prefacturaData, viajesPrefacturados, viajesNoPrefacturados } = useMemo(() => {
     let prefacturada = 0, noPrefactura = 0, prefacturadaCount = 0, noPrefacturaCount = 0;
+    const prefSi: typeof filteredViajes = [];
+    const prefNo: typeof filteredViajes = [];
     for (const v of filteredViajes) {
       const estado = v.estado_prefactura || "No Prefactura";
       if (estado === "No Prefactura") {
         noPrefactura += v.tarifa_venta || 0;
         noPrefacturaCount++;
+        prefNo.push(v);
       } else {
         prefacturada += v.tarifa_venta || 0;
         prefacturadaCount++;
+        prefSi.push(v);
       }
     }
     return {
-      prefacturada: Math.round(prefacturada),
-      noPrefactura: Math.round(noPrefactura),
-      prefacturadaCount,
-      noPrefacturaCount,
+      prefacturaData: {
+        prefacturada: Math.round(prefacturada),
+        noPrefactura: Math.round(noPrefactura),
+        prefacturadaCount,
+        noPrefacturaCount,
+      },
+      viajesPrefacturados: prefSi,
+      viajesNoPrefacturados: prefNo,
     };
   }, [filteredViajes]);
+
+  const downloadExcel = useCallback((rows: typeof filteredViajes, filename: string) => {
+    const data = rows.map((v) => ({
+      viaje_id: v.viaje_id,
+      cliente_rut: v.cliente_rut || "",
+      estado_viaje_estandar: v.estado_viaje_estandar,
+      tarifa_venta: v.tarifa_venta,
+      estado_pod_detalle: v.estado_pod_detalle,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Detalle");
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+  }, []);
 
   // Compute unique days count for venta promedio diaria
   const uniqueDays = useMemo(() => {
@@ -201,22 +224,42 @@ const DashboardHome = () => {
 
           {/* Segmentación Prefactura */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <KpiCard
-              title="Venta Prefacturada"
-              value={formatCLP(prefacturaData.prefacturada)}
-              icon={<FileCheck className="w-5 h-5" />}
-              subtitle={`${prefacturaData.prefacturadaCount} viajes prefacturados`}
-              trend="up"
-              change={`${kpis.ventaTotal > 0 ? ((prefacturaData.prefacturada / kpis.ventaTotal) * 100).toFixed(1) : 0}% del total`}
-            />
-            <KpiCard
-              title="Venta No Prefacturada"
-              value={formatCLP(prefacturaData.noPrefactura)}
-              icon={<FileX className="w-5 h-5" />}
-              subtitle={`${prefacturaData.noPrefacturaCount} viajes sin prefactura`}
-              trend="down"
-              change={`${kpis.ventaTotal > 0 ? ((prefacturaData.noPrefactura / kpis.ventaTotal) * 100).toFixed(1) : 0}% del total`}
-            />
+            <div className="card-executive p-5 hover:glow-cyan transition-all duration-300 group relative">
+              <div className="flex items-start justify-between mb-3">
+                <button
+                  onClick={() => downloadExcel(viajesPrefacturados, "viajes_prefacturados")}
+                  className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors cursor-pointer hover:scale-110"
+                  title="Descargar detalle prefacturados"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1 text-xs font-medium text-success">
+                  <TrendingUp className="w-3 h-3" />
+                  {kpis.ventaTotal > 0 ? ((prefacturaData.prefacturada / kpis.ventaTotal) * 100).toFixed(1) : 0}% del total
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground tracking-tight">{formatCLP(prefacturaData.prefacturada)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Venta Prefacturada</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">{prefacturaData.prefacturadaCount} viajes prefacturados</p>
+            </div>
+            <div className="card-executive p-5 hover:glow-cyan transition-all duration-300 group relative">
+              <div className="flex items-start justify-between mb-3">
+                <button
+                  onClick={() => downloadExcel(viajesNoPrefacturados, "viajes_no_prefacturados")}
+                  className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors cursor-pointer hover:scale-110"
+                  title="Descargar detalle no prefacturados"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1 text-xs font-medium text-destructive">
+                  <TrendingUp className="w-3 h-3" />
+                  {kpis.ventaTotal > 0 ? ((prefacturaData.noPrefactura / kpis.ventaTotal) * 100).toFixed(1) : 0}% del total
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground tracking-tight">{formatCLP(prefacturaData.noPrefactura)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Venta No Prefacturada</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">{prefacturaData.noPrefacturaCount} viajes sin prefactura</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
