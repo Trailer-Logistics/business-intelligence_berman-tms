@@ -1,9 +1,7 @@
-import { useState, KeyboardEvent, lazy, Suspense } from "react";
+import { useState, KeyboardEvent } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Truck } from "lucide-react";
-
-const RotatingPlanet = lazy(() => import("@/components/RotatingPlanet"));
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -30,38 +28,16 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background gradient-mesh relative overflow-hidden">
-      {/* Left side — 3D Planet */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative">
-        {/* Ambient glow behind planet */}
-        <div className="absolute w-[400px] h-[400px] rounded-full opacity-20"
-          style={{
-            background: "radial-gradient(circle, hsl(185 100% 50% / 0.5) 0%, transparent 70%)",
-            filter: "blur(80px)",
-          }}
-        />
-        <div className="w-[500px] h-[500px]">
-          <Suspense fallback={
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="w-40 h-40 rounded-full animate-pulse-glow" style={{ background: "hsl(185 100% 50% / 0.1)", border: "2px solid hsl(185 100% 50% / 0.2)" }} />
-            </div>
-          }>
-            <RotatingPlanet />
-          </Suspense>
-        </div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-background gradient-mesh relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute w-[300px] h-[300px] rounded-full animate-float opacity-20"
+        style={{
+          background: "radial-gradient(circle, hsl(185 100% 50% / 0.3) 0%, transparent 60%)",
+          filter: "blur(40px)",
+        }}
+      />
 
-      {/* Right side — Login form */}
-      <div className="flex-1 flex items-center justify-center px-6 relative">
-        {/* Mobile orb fallback */}
-        <div className="absolute w-[300px] h-[300px] rounded-full animate-float opacity-20 lg:hidden"
-          style={{
-            background: "radial-gradient(circle, hsl(185 100% 50% / 0.3) 0%, transparent 60%)",
-            filter: "blur(40px)",
-          }}
-        />
-
-        <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md px-6">
           <div className="card-executive p-8 glow-cyan">
             {/* Logo area */}
             <div className="flex flex-col items-center mb-8">
@@ -119,7 +95,6 @@ const LoginPage = () => {
               © 2026 Trailer Logistics · Plataforma BI
             </p>
           </div>
-        </div>
       </div>
     </div>
   );
