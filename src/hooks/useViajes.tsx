@@ -5,6 +5,7 @@ interface Viaje {
   viaje_id: number;
   nro_viaje: string;
   cliente_estandar: string;
+  cliente_rut: string;
   estado_viaje_estandar: string;
   terminado: string;
   km_recorridos: number;
