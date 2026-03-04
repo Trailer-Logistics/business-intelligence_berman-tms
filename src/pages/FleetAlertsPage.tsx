@@ -33,7 +33,8 @@ export default function FleetAlertsPage() {
   const [filterPatente, setFilterPatente] = useState("");
   const [filterDoc, setFilterDoc] = useState<string[]>([]);
   const [filterSemaforo, setFilterSemaforo] = useState<string[]>([]);
-
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 30;
   const { data: alertas = [], isLoading } = useExternalData<AlertaFlota>({
     view: "v_alertas_flota",
     limit: 5000,
@@ -70,7 +71,17 @@ export default function FleetAlertsPage() {
     setFilterPatente("");
     setFilterDoc([]);
     setFilterSemaforo([]);
+    setPage(1);
   };
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginatedData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filters change
+  const handleFilterTipo = (v: string[]) => { setFilterTipo(v); setPage(1); };
+  const handleFilterDoc = (v: string[]) => { setFilterDoc(v); setPage(1); };
+  const handleFilterSemaforo = (v: string[]) => { setFilterSemaforo(v); setPage(1); };
+  const handleFilterPatente = (e: React.ChangeEvent<HTMLInputElement>) => { setFilterPatente(e.target.value); setPage(1); };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -94,20 +105,20 @@ export default function FleetAlertsPage() {
             <MultiSelectDropdown
               options={tipos}
               selected={filterTipo}
-              onChange={setFilterTipo}
+              onChange={handleFilterTipo}
               placeholder="Todos"
             />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] text-muted-foreground uppercase">Patente</label>
-            <Input className="h-8 text-xs" placeholder="Buscar patente..." value={filterPatente} onChange={(e) => setFilterPatente(e.target.value)} />
+            <Input className="h-8 text-xs" placeholder="Buscar patente..." value={filterPatente} onChange={handleFilterPatente} />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] text-muted-foreground uppercase">Documento</label>
             <MultiSelectDropdown
               options={docs}
               selected={filterDoc}
-              onChange={setFilterDoc}
+              onChange={handleFilterDoc}
               placeholder="Todos"
             />
           </div>
@@ -116,7 +127,7 @@ export default function FleetAlertsPage() {
             <MultiSelectDropdown
               options={semaforos}
               selected={filterSemaforo}
-              onChange={setFilterSemaforo}
+              onChange={handleFilterSemaforo}
               placeholder="Todos"
             />
           </div>
@@ -136,7 +147,10 @@ export default function FleetAlertsPage() {
           </div>
 
           <div className="card-executive p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Detalle de Documentación</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground">Detalle de Documentación</h3>
+              <span className="text-xs text-muted-foreground">{filtered.length} registros · Página {page} de {totalPages}</span>
+            </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -150,7 +164,7 @@ export default function FleetAlertsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.slice(0, 50).map((a, i) => (
+                  {paginatedData.map((a, i) => (
                     <TableRow key={`${a.vehiculo_id}-${a.documento}-${i}`}>
                       <TableCell className="text-xs font-mono">{a.patente}</TableCell>
                       <TableCell className="text-xs">{a.tipo_vehiculo}</TableCell>
@@ -173,6 +187,49 @@ export default function FleetAlertsPage() {
                 </TableBody>
               </Table>
             </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1 text-xs rounded border border-input bg-background hover:bg-accent disabled:opacity-40 transition-colors"
+                >
+                  Anterior
+                </button>
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (page <= 4) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 3) {
+                    pageNum = totalPages - 6 + i;
+                  } else {
+                    pageNum = page - 3 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`w-7 h-7 text-xs rounded transition-colors ${
+                        page === pageNum
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-input bg-background hover:bg-accent"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-1 text-xs rounded border border-input bg-background hover:bg-accent disabled:opacity-40 transition-colors"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
