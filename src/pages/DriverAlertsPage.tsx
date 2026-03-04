@@ -61,7 +61,7 @@ export default function DriverAlertsPage() {
     const uniqueConductores = new Set(filtered.map((a) => a.conductor_id)).size;
     const vencidos = filtered.filter((a) => a.estado_semaforo === "VENCIDO").length;
     const criticos = filtered.filter((a) => a.estado_semaforo === "CRÍTICO (< 60 DÍAS)").length;
-    const bloqueados = filtered.filter((a) => a.bloqueo_adm === "Bloqueado").length;
+    const bloqueados = new Set(filtered.filter((a) => a.bloqueo_adm === "Bloqueado").map((a) => a.conductor_id)).size;
     const noCargados = filtered.filter((a) => a.estado_semaforo === "DOCUMENTO NO CARGADO").length;
     return { uniqueConductores, vencidos, criticos, bloqueados, noCargados };
   }, [filtered]);
