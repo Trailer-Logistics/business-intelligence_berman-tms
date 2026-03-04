@@ -6,8 +6,9 @@ import { Truck, DollarSign, Route, Clock, TrendingUp, Loader2, Banknote, FileChe
 import * as XLSX from "xlsx";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, PieChart, Pie, Cell
+  PieChart, Pie, Cell
 } from "recharts";
+import WaterfallTrendChart from "@/components/WaterfallTrendChart";
 
 const tooltipStyle = {
   background: "hsl(220, 25%, 10%)",
@@ -138,17 +139,6 @@ const DashboardHome = () => {
     }));
   }, [filteredViajes]);
 
-  const trendData = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const v of filteredViajes) {
-      if (v.fecha_salida_origen) {
-        const day = typeof v.fecha_salida_origen === "string" ? v.fecha_salida_origen.slice(0, 10) : "";
-        if (day) map[day] = (map[day] || 0) + 1;
-      }
-    }
-    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).slice(-30)
-      .map(([date, count]) => ({ name: date.slice(5), viajes: count }));
-  }, [filteredViajes]);
 
   const formatNumber = (n: number) => n.toLocaleString("es-CL");
   const formatCLP = (n: number) => {
@@ -309,32 +299,7 @@ const DashboardHome = () => {
             </div>
           </div>
 
-          <div className="card-executive p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Tendencia de Viajes</h3>
-                <p className="text-xs text-muted-foreground">Volumen diario (fecha salida origen)</p>
-              </div>
-              <TrendingUp className="w-4 h-4 text-primary" />
-            </div>
-            {trendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={trendData}>
-                  <defs>
-                    <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(185, 100%, 50%)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(185, 100%, 50%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
-                  <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={11} />
-                  <YAxis stroke="hsl(215, 15%, 55%)" fontSize={12} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Area type="monotone" dataKey="viajes" stroke="hsl(185, 100%, 50%)" fill="url(#cyanGrad)" strokeWidth={2} name="Viajes" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>}
-          </div>
+          <WaterfallTrendChart viajes={filteredViajes} />
         </>
       )}
     </div>
