@@ -6,6 +6,7 @@ import KpiCard from "@/components/KpiCard";
 import { Brain, TrendingUp, DollarSign, BarChart3, Loader2 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  LineChart, Line,
 } from "recharts";
 
 const tooltipStyle = {
@@ -96,37 +97,20 @@ export default function ForecastingPage() {
             <KpiCard title="Promedio Diario" value={formatCLP(dailyData.length > 0 ? Math.round(totalReal / dailyData.length) : 0)} icon={<Brain className="w-5 h-5" />} subtitle="Venta real / día" />
           </div>
 
-          {/* Venta Real por Cliente */}
+          {/* Venta Diaria TTE */}
           <div className="card-executive p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-1">Venta Real por Cliente</h3>
-            <p className="text-xs text-muted-foreground mb-4">Top 10 clientes por facturación</p>
-            {clientData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={clientData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
-                  <XAxis type="number" stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} />
-                  <YAxis dataKey="name" type="category" stroke="hsl(215, 15%, 55%)" fontSize={11} width={130} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`$${v.toLocaleString("es-CL")}`, "Venta Real"]} />
-                  <Bar dataKey="real" fill="hsl(220, 90%, 55%)" radius={[0, 4, 4, 0]} name="Real" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <p className="text-muted-foreground text-center py-10 text-sm">Sin datos</p>}
-          </div>
-
-          {/* Venta Diaria */}
-          <div className="card-executive p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-1">Venta Diaria</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Venta Diaria TTE</h3>
             <p className="text-xs text-muted-foreground mb-4">Tarifa real acumulada por día (fecha salida origen)</p>
             {dailyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={dailyData}>
+                <LineChart data={dailyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
                   <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={11} />
                   <YAxis stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [name === "real" ? `$${v.toLocaleString("es-CL")}` : v, name === "real" ? "Venta" : "Viajes"]} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`$${v.toLocaleString("es-CL")}`, "Venta Real"]} />
                   <Legend />
-                  <Bar dataKey="real" fill="hsl(220, 90%, 55%)" radius={[4, 4, 0, 0]} name="Venta Real" />
-                </BarChart>
+                  <Line type="monotone" dataKey="real" stroke="hsl(220, 90%, 55%)" strokeWidth={2} dot={{ r: 3 }} name="Venta Real" />
+                </LineChart>
               </ResponsiveContainer>
             ) : <p className="text-muted-foreground text-center py-10 text-sm">Sin datos</p>}
           </div>
