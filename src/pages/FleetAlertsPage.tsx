@@ -40,7 +40,7 @@ export default function FleetAlertsPage() {
   });
 
   // Only active vehicles (estado = 1)
-  const activeAlertas = useMemo(() => alertas.filter((a) => a.vehiculo_estado === 1), [alertas]);
+  const activeAlertas = useMemo(() => alertas.filter((a) => Number(a.vehiculo_estado) === 1), [alertas]);
 
   const tipos = useMemo(() => [...new Set(activeAlertas.map((a) => a.tipo_vehiculo).filter(Boolean))].sort(), [activeAlertas]);
   const docs = useMemo(() => [...new Set(activeAlertas.map((a) => a.documento).filter(Boolean))].sort(), [activeAlertas]);
