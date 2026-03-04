@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useExternalData } from "@/hooks/useExternalData";
 import KpiCard from "@/components/KpiCard";
-import { Car, AlertTriangle, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import MultiSelectDropdown from "@/components/MultiSelectDropdown";
+import { Car, AlertTriangle, CheckCircle, XCircle, FileX, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Filter, RotateCcw } from "lucide-react";
 
 interface AlertaFlota {
   vehiculo_id: number;
@@ -28,9 +29,10 @@ const SEMAFORO_COLORS: Record<string, string> = {
 };
 
 export default function FleetAlertsPage() {
-  const [filterTipo, setFilterTipo] = useState("");
+  const [filterTipo, setFilterTipo] = useState<string[]>([]);
   const [filterPatente, setFilterPatente] = useState("");
-  const [filterDoc, setFilterDoc] = useState("");
+  const [filterDoc, setFilterDoc] = useState<string[]>([]);
+  const [filterSemaforo, setFilterSemaforo] = useState<string[]>([]);
 
   const { data: alertas = [], isLoading } = useExternalData<AlertaFlota>({
     view: "v_alertas_flota",
@@ -42,23 +44,33 @@ export default function FleetAlertsPage() {
 
   const tipos = useMemo(() => [...new Set(activeAlertas.map((a) => a.tipo_vehiculo).filter(Boolean))].sort(), [activeAlertas]);
   const docs = useMemo(() => [...new Set(activeAlertas.map((a) => a.documento).filter(Boolean))].sort(), [activeAlertas]);
+  const semaforos = useMemo(() => [...new Set(activeAlertas.map((a) => a.estado_semaforo).filter(Boolean))].sort(), [activeAlertas]);
 
   const filtered = useMemo(() => {
     return activeAlertas.filter((a) => {
-      if (filterTipo && a.tipo_vehiculo !== filterTipo) return false;
+      if (filterTipo.length > 0 && !filterTipo.includes(a.tipo_vehiculo)) return false;
       if (filterPatente && !a.patente?.toLowerCase().includes(filterPatente.toLowerCase())) return false;
-      if (filterDoc && a.documento !== filterDoc) return false;
+      if (filterDoc.length > 0 && !filterDoc.includes(a.documento)) return false;
+      if (filterSemaforo.length > 0 && !filterSemaforo.includes(a.estado_semaforo)) return false;
       return true;
     });
-  }, [activeAlertas, filterTipo, filterPatente, filterDoc]);
+  }, [activeAlertas, filterTipo, filterPatente, filterDoc, filterSemaforo]);
 
   const kpis = useMemo(() => {
-    const total = filtered.length;
+    const uniquePatentes = new Set(filtered.map((a) => a.patente)).size;
     const vencidos = filtered.filter((a) => a.estado_semaforo === "VENCIDO").length;
     const criticos = filtered.filter((a) => a.estado_semaforo === "CRÍTICO (< 60 DÍAS)").length;
-    const optimos = filtered.filter((a) => a.estado_semaforo === "OPTIMO (> 90 DÍAS)").length;
-    return { total, vencidos, criticos, optimos };
+    const optimos = filtered.filter((a) => a.estado_semaforo === "OPTIMO (> 90 DÍAS)" || a.estado_semaforo === "AL DÍA").length;
+    const noCargados = filtered.filter((a) => a.estado_semaforo === "DOCUMENTO NO CARGADO" || a.estado_semaforo === "SIN DATO").length;
+    return { uniquePatentes, vencidos, criticos, optimos, noCargados };
   }, [filtered]);
+
+  const reset = () => {
+    setFilterTipo([]);
+    setFilterPatente("");
+    setFilterDoc([]);
+    setFilterSemaforo([]);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -67,18 +79,24 @@ export default function FleetAlertsPage() {
         <p className="text-sm text-muted-foreground">Tractos y Ramplas — Alertas documentales</p>
       </div>
 
-      {/* Filters */}
+      {/* Filters - same style as GlobalFiltersPanel */}
       <div className="card-executive p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="flex items-center gap-2 mb-3">
+          <Filter className="w-4 h-4 text-primary" />
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Filtros</span>
+          <button onClick={reset} className="ml-auto text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+            <RotateCcw className="w-3 h-3" /> Reset
+          </button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-[10px] text-muted-foreground uppercase">Tipo Vehículo</label>
-            <Select value={filterTipo || "all"} onValueChange={(v) => setFilterTipo(v === "all" ? "" : v)}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {tipos.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={tipos}
+              selected={filterTipo}
+              onChange={setFilterTipo}
+              placeholder="Todos"
+            />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] text-muted-foreground uppercase">Patente</label>
@@ -86,13 +104,21 @@ export default function FleetAlertsPage() {
           </div>
           <div className="space-y-1">
             <label className="text-[10px] text-muted-foreground uppercase">Documento</label>
-            <Select value={filterDoc || "all"} onValueChange={(v) => setFilterDoc(v === "all" ? "" : v)}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {docs.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={docs}
+              selected={filterDoc}
+              onChange={setFilterDoc}
+              placeholder="Todos"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground uppercase">Estado</label>
+            <MultiSelectDropdown
+              options={semaforos}
+              selected={filterSemaforo}
+              onChange={setFilterSemaforo}
+              placeholder="Todos"
+            />
           </div>
         </div>
       </div>
@@ -101,11 +127,12 @@ export default function FleetAlertsPage() {
         <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard title="Total Registros" value={kpis.total.toString()} icon={<Car className="w-5 h-5" />} subtitle="Vehículos activos" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <KpiCard title="Patentes Únicas" value={kpis.uniquePatentes.toString()} icon={<Car className="w-5 h-5" />} subtitle="Vehículos activos" />
             <KpiCard title="Vencidos" value={kpis.vencidos.toString()} trend="down" change="Acción requerida" icon={<XCircle className="w-5 h-5" />} subtitle="Documentos vencidos" />
             <KpiCard title="Críticos" value={kpis.criticos.toString()} trend="neutral" change="< 60 días" icon={<AlertTriangle className="w-5 h-5" />} subtitle="Próximos a vencer" />
             <KpiCard title="Óptimos" value={kpis.optimos.toString()} trend="up" change="> 90 días" icon={<CheckCircle className="w-5 h-5" />} subtitle="Al día" />
+            <KpiCard title="No Cargados" value={kpis.noCargados.toString()} trend="down" change="Sin documentos" icon={<FileX className="w-5 h-5" />} subtitle="Documentos sin cargar" />
           </div>
 
           <div className="card-executive p-5">
