@@ -76,25 +76,37 @@ export default function ForecastContractualPage() {
 
   const fetchRows = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("r_forecast_contractual")
-      .select("*")
-      .eq("mes_proyeccion", mesDate)
-      .order("cliente_estandar");
-    if (!error && data) {
-      setRows(data as ForecastRow[]);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/forecast-contractual`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ action: "read", mes_proyeccion: mesDate }),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Error al leer forecast");
+      const data = result.data as ForecastRow[];
+      setRows(data);
       const edit: Record<string, Record<string, string>> = {};
-      for (const r of data as ForecastRow[]) {
+      for (const r of data) {
         edit[r.cliente_estandar] = {
           ...Object.fromEntries(DAYS.map(d => [d, (r[d] || 0).toString()])),
         };
       }
       setEditData(edit);
-      // Sum all monto_extras from rows to set the global extras
-      const totalExtras = (data as ForecastRow[]).reduce((s, r) => s + (r.monto_extras || 0), 0);
+      const totalExtras = data.reduce((s, r) => s + (r.monto_extras || 0), 0);
       setMontoExtrasGlobal(totalExtras.toString());
       setEditMode(false);
       setHasUnsavedChanges(false);
+    } catch (err: any) {
+      console.error("Fetch forecast error:", err);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
     setLoading(false);
   };
@@ -132,7 +144,6 @@ export default function ForecastContractualPage() {
     const payloads = allClients.map((client, index) => {
       const d = editData[client] || {};
       const ventaBase = calcVentaBase(client);
-      // Store the global extras only on the first client row for persistence
       const clientExtras = index === 0 ? extras : 0;
       return {
         cliente_estandar: client,
@@ -151,16 +162,27 @@ export default function ForecastContractualPage() {
       };
     });
 
-    console.log('PAYLOAD FORECAST:', JSON.stringify(payloads));
-    const { error } = await supabase
-      .from("r_forecast_contractual")
-      .upsert(payloads, { onConflict: "cliente_estandar,mes_proyeccion" });
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('PAYLOAD FORECAST:', JSON.stringify(payloads));
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/forecast-contractual`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ action: "upsert", payloads }),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Error al guardar");
       toast({ title: "Guardado", description: `${payloads.length} registros actualizados para ${selectedMonth}.` });
       fetchRows();
+    } catch (err: any) {
+      console.error("Save forecast error:", err);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
     setSaving(false);
   };
