@@ -7,7 +7,7 @@ import KpiCard from "@/components/KpiCard";
 import { Brain, TrendingUp, DollarSign, BarChart3, Loader2, Target } from "lucide-react";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  LineChart, Line, ReferenceLine,
+  ComposedChart, Line, Area, ReferenceLine,
 } from "recharts";
 
 const tooltipStyle = {
@@ -184,16 +184,40 @@ export default function ForecastingPage() {
             </p>
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={chartData}>
+                <ComposedChart data={chartData}>
+                  <defs>
+                    <linearGradient id="areaReal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(220, 90%, 55%)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="hsl(220, 90%, 55%)" stopOpacity={0.03} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
                   <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={11} />
                   <YAxis stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={(v: number | null, name: string) => [
-                      v != null ? `$${v.toLocaleString("es-CL")}` : "—",
-                      name,
-                    ]}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const real = payload.find((p: any) => p.dataKey === "real")?.value as number | null;
+                      const forecast = payload.find((p: any) => p.dataKey === "forecastAcc")?.value as number | null;
+                      const projected = payload.find((p: any) => p.dataKey === "projected")?.value as number | null;
+                      const pctDiff = real != null && forecast && forecast > 0
+                        ? (((real - forecast) / forecast) * 100).toFixed(1)
+                        : null;
+                      return (
+                        <div style={tooltipStyle} className="p-2">
+                          <p className="font-semibold mb-1">{label}</p>
+                          {real != null && <p style={{ color: "hsl(220, 90%, 55%)" }}>Venta Real: ${real.toLocaleString("es-CL")}</p>}
+                          {forecast != null && <p style={{ color: "hsl(45, 90%, 55%)" }}>Forecast Acum: ${forecast.toLocaleString("es-CL")}</p>}
+                          {projected != null && <p style={{ color: "hsl(160, 70%, 50%)" }}>Proyectada: ${projected.toLocaleString("es-CL")}</p>}
+                          {pctDiff != null && (
+                            <p className="mt-1 font-semibold" style={{ color: Number(pctDiff) >= 0 ? "hsl(160, 70%, 50%)" : "hsl(0, 85%, 55%)" }}>
+                              Δ Real vs Forecast: {Number(pctDiff) >= 0 ? "+" : ""}{pctDiff}%
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }}
                   />
                   <Legend />
                   {/* Meta Forecast - horizontal */}
@@ -203,22 +227,27 @@ export default function ForecastingPage() {
                       stroke="hsl(0, 85%, 55%)"
                       strokeDasharray="6 3"
                       strokeWidth={2}
-                      label={{
-                        value: `Meta ${formatCLP(forecastTotal)}`,
-                        position: "insideTopRight",
-                        fill: "hsl(0, 85%, 55%)",
-                        fontSize: 11,
-                        fontWeight: 600,
+                      label={({ viewBox }: any) => {
+                        const { x, y: ly } = viewBox || {};
+                        return (
+                          <g>
+                            <rect x={(x || 0) + 4} y={(ly || 0) - 24} width={120} height={18} rx={4} fill="hsla(0, 0%, 100%, 0.15)" />
+                            <text x={(x || 0) + 10} y={(ly || 0) - 11} fill="hsl(0, 85%, 55%)" fontSize={11} fontWeight={600}>
+                              Meta {formatCLP(forecastTotal)}
+                            </text>
+                          </g>
+                        );
                       }}
                     />
                   )}
-                  {/* Línea 1: Venta Real Acumulada */}
-                  <Line
+                  {/* Área + Línea: Venta Real Acumulada */}
+                  <Area
                     type="monotone"
                     dataKey="real"
                     stroke="hsl(220, 90%, 55%)"
                     strokeWidth={2.5}
-                    dot={{ r: 3 }}
+                    fill="url(#areaReal)"
+                    dot={{ r: 3, fill: "hsl(220, 90%, 55%)" }}
                     name="Venta Real"
                     connectNulls={false}
                   />
@@ -243,7 +272,7 @@ export default function ForecastingPage() {
                     name="Venta Proyectada"
                     connectNulls={false}
                   />
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
             ) : <p className="text-muted-foreground text-center py-10 text-sm">Sin datos para el mes seleccionado</p>}
           </div>
