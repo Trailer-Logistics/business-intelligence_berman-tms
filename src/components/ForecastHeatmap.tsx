@@ -1,30 +1,67 @@
 import { useMemo } from "react";
-import { useViajes, Viaje } from "@/hooks/useViajes";
-import { Tooltip as RechartsTooltip } from "recharts";
+import { useViajes } from "@/hooks/useViajes";
+
+interface ForecastRow {
+  lunes_clp: number | null;
+  martes_clp: number | null;
+  miercoles_clp: number | null;
+  jueves_clp: number | null;
+  viernes_clp: number | null;
+  sabado_clp: number | null;
+  [key: string]: any;
+}
 
 interface DayCell {
   date: string;
   dayOfMonth: number;
   dow: number; // 0=Sun
   real: number;
+  forecast: number;
   clientBreakdown: Record<string, number>;
   isCurrentMonth: boolean;
 }
 
 const DOW_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-function getColor(real: number, avg: number): string {
-  if (real === 0) return "bg-muted/30";
-  if (real >= avg * 1.2) return "bg-success/60";
-  if (real >= avg * 0.8) return "bg-success/30";
-  if (real >= avg * 0.5) return "bg-warning/40";
+// Map JS day-of-week (0=Sun) to forecast column
+const DOW_TO_COL: Record<number, keyof ForecastRow> = {
+  1: "lunes_clp",
+  2: "martes_clp",
+  3: "miercoles_clp",
+  4: "jueves_clp",
+  5: "viernes_clp",
+  6: "sabado_clp",
+};
+
+function getColor(real: number, forecast: number): string {
+  if (real === 0 && forecast === 0) return "bg-muted/30";
+  if (forecast === 0) return "bg-success/60";
+  const ratio = real / forecast;
+  if (ratio >= 1.2) return "bg-success/60";
+  if (ratio >= 0.8) return "bg-success/30";
+  if (ratio >= 0.5) return "bg-warning/40";
   return "bg-destructive/40";
 }
 
-export default function ForecastHeatmap() {
+interface ForecastHeatmapProps {
+  forecastRows?: ForecastRow[];
+}
+
+export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapProps) {
   const { filteredViajes, filters } = useViajes();
 
-  const { cells, avgDaily } = useMemo(() => {
+  // Calculate daily forecast per DOW from forecast rows
+  const dowForecastMap = useMemo(() => {
+    const map: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    for (const row of forecastRows) {
+      for (const [dow, col] of Object.entries(DOW_TO_COL)) {
+        map[Number(dow)] += Number(row[col]) || 0;
+      }
+    }
+    return map;
+  }, [forecastRows]);
+
+  const { cells, totalForecast } = useMemo(() => {
     // Build daily map
     const dailyMap: Record<string, { real: number; clients: Record<string, number> }> = {};
     for (const v of filteredViajes) {
@@ -46,27 +83,28 @@ export default function ForecastHeatmap() {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const cells: DayCell[] = [];
-    let totalReal = 0;
-    let activeDays = 0;
+    let totalForecast = 0;
 
     for (let d = 1; d <= daysInMonth; d++) {
       const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const dow = new Date(year, month, d).getDay();
       const entry = dailyMap[date];
       const real = entry?.real || 0;
-      if (real > 0) { totalReal += real; activeDays++; }
+      const forecast = dowForecastMap[dow] || 0;
+      totalForecast += forecast;
       cells.push({
         date,
         dayOfMonth: d,
         dow,
         real: Math.round(real),
+        forecast: Math.round(forecast),
         clientBreakdown: entry?.clients || {},
         isCurrentMonth: true,
       });
     }
 
-    return { cells, avgDaily: activeDays > 0 ? totalReal / activeDays : 0 };
-  }, [filteredViajes, filters.dateFrom]);
+    return { cells, totalForecast };
+  }, [filteredViajes, filters.dateFrom, dowForecastMap]);
 
   // Group by weeks
   const weeks = useMemo(() => {
@@ -77,7 +115,7 @@ export default function ForecastHeatmap() {
     if (cells.length > 0) {
       const firstDow = cells[0].dow;
       for (let i = 0; i < firstDow; i++) {
-        current.push({ date: "", dayOfMonth: 0, dow: i, real: 0, clientBreakdown: {}, isCurrentMonth: false });
+        current.push({ date: "", dayOfMonth: 0, dow: i, real: 0, forecast: 0, clientBreakdown: {}, isCurrentMonth: false });
       }
     }
 
@@ -90,7 +128,7 @@ export default function ForecastHeatmap() {
     }
     if (current.length > 0) {
       while (current.length < 7) {
-        current.push({ date: "", dayOfMonth: 0, dow: current.length, real: 0, clientBreakdown: {}, isCurrentMonth: false });
+        current.push({ date: "", dayOfMonth: 0, dow: current.length, real: 0, forecast: 0, clientBreakdown: {}, isCurrentMonth: false });
       }
       result.push(current);
     }
@@ -104,7 +142,7 @@ export default function ForecastHeatmap() {
     <div className="card-executive p-5">
       <h3 className="text-sm font-semibold text-foreground mb-1">Heatmap de Venta Diaria</h3>
       <p className="text-xs text-muted-foreground mb-4">
-        Calendario Rojo/Verde — Promedio diario: {formatCLP(Math.round(avgDaily))}
+        Real vs Forecast Contractual · Meta mes: {formatCLP(totalForecast)}
       </p>
 
       {/* DOW Headers */}
@@ -122,7 +160,7 @@ export default function ForecastHeatmap() {
               <div
                 key={ci}
                 className={`relative aspect-square rounded-md flex flex-col items-center justify-center transition-all group cursor-default ${
-                  !cell.isCurrentMonth ? "opacity-20" : getColor(cell.real, avgDaily)
+                  !cell.isCurrentMonth ? "opacity-20" : getColor(cell.real, cell.forecast)
                 }`}
               >
                 {cell.isCurrentMonth && (
@@ -131,11 +169,17 @@ export default function ForecastHeatmap() {
                     <span className="text-[8px] text-foreground/70">{cell.real > 0 ? formatCLP(cell.real) : ""}</span>
 
                     {/* Tooltip */}
-                    {cell.real > 0 && (
+                    {(cell.real > 0 || cell.forecast > 0) && (
                       <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block">
                         <div className="card-executive p-3 shadow-xl min-w-[180px] border border-border">
                           <p className="text-[10px] font-semibold text-foreground mb-1">{cell.date}</p>
-                          <p className="text-[10px] text-primary font-bold mb-2">Total: {formatCLP(cell.real)}</p>
+                          <p className="text-[10px] text-primary font-bold">Real: {formatCLP(cell.real)}</p>
+                          <p className="text-[10px] text-warning font-bold">Forecast: {formatCLP(cell.forecast)}</p>
+                          {cell.forecast > 0 && (
+                            <p className={`text-[10px] font-bold ${cell.real >= cell.forecast ? "text-success" : "text-destructive"}`}>
+                              Δ {((cell.real / cell.forecast - 1) * 100).toFixed(1)}%
+                            </p>
+                          )}
                           <div className="space-y-0.5">
                             {Object.entries(cell.clientBreakdown)
                               .sort((a, b) => b[1] - a[1])
@@ -159,8 +203,8 @@ export default function ForecastHeatmap() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 justify-center">
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-destructive/40" /><span className="text-[9px] text-muted-foreground">&lt;50% prom</span></div>
+      <div className="flex items-center gap-4 mt-4 justify-center flex-wrap">
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-destructive/40" /><span className="text-[9px] text-muted-foreground">&lt;50% forecast</span></div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-warning/40" /><span className="text-[9px] text-muted-foreground">50-80%</span></div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-success/30" /><span className="text-[9px] text-muted-foreground">80-120%</span></div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-success/60" /><span className="text-[9px] text-muted-foreground">&gt;120%</span></div>
