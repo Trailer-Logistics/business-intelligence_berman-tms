@@ -40,13 +40,12 @@ const DOW_TO_COL: Record<number, keyof ForecastRow> = {
 };
 
 function getColor(real: number, forecast: number): string {
-  if (real === 0 && forecast === 0) return "bg-muted/30";
-  if (forecast === 0) return "bg-success/60";
+  if (forecast === 0 && real === 0) return "bg-muted/30";
+  if (forecast === 0) return "bg-muted/20"; // no forecast defined → gray
   const ratio = real / forecast;
-  if (ratio >= 1.2) return "bg-success/60";
-  if (ratio >= 0.8) return "bg-success/30";
-  if (ratio >= 0.5) return "bg-warning/40";
-  return "bg-destructive/40";
+  if (ratio >= 0.95) return "bg-success/50";
+  if (ratio >= 0.70) return "bg-warning/50";
+  return "bg-destructive/50";
 }
 
 interface ForecastHeatmapProps {
@@ -87,8 +86,9 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
     for (const v of filteredViajes) {
       const estado = v.estado_viaje_estandar?.toLowerCase() || "";
       if (estado.includes("anulado") || estado.includes("programado")) continue;
-      if (!v.fecha_salida_origen) continue;
-      const d = typeof v.fecha_salida_origen === "string" ? v.fecha_salida_origen.slice(0, 10) : "";
+      const rawDate = v.fecha_creacion_viaje || v.fecha_salida_origen;
+      if (!rawDate) continue;
+      const d = typeof rawDate === "string" ? rawDate.slice(0, 10) : "";
       if (!d) continue;
       if (!dailyMap[d]) dailyMap[d] = {};
       const c = v.cliente_estandar || "Otros";
@@ -240,10 +240,10 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
 
       {/* Legend */}
       <div className="flex items-center gap-4 mt-4 justify-center flex-wrap">
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-destructive/40" /><span className="text-[9px] text-muted-foreground">&lt;50% forecast</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-warning/40" /><span className="text-[9px] text-muted-foreground">50-80%</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-success/30" /><span className="text-[9px] text-muted-foreground">80-120%</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-success/60" /><span className="text-[9px] text-muted-foreground">&gt;120%</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-destructive/50" /><span className="text-[9px] text-muted-foreground">&lt;70%</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-warning/50" /><span className="text-[9px] text-muted-foreground">70–95%</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-success/50" /><span className="text-[9px] text-muted-foreground">≥95%</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-muted/20" /><span className="text-[9px] text-muted-foreground">Sin forecast</span></div>
       </div>
     </div>
   );
