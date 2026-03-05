@@ -67,6 +67,7 @@ export default function ForecastContractualPage() {
   const [addingClient, setAddingClient] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [montoExtrasGlobal, setMontoExtrasGlobal] = useState("0");
 
   const mesDate = `${selectedMonth}-01`;
   const [year, monthNum] = selectedMonth.split("-").map(Number);
@@ -86,10 +87,12 @@ export default function ForecastContractualPage() {
       for (const r of data as ForecastRow[]) {
         edit[r.cliente_estandar] = {
           ...Object.fromEntries(DAYS.map(d => [d, (r[d] || 0).toString()])),
-          monto_extras: (r.monto_extras || 0).toString(),
         };
       }
       setEditData(edit);
+      // Sum all monto_extras from rows to set the global extras
+      const totalExtras = (data as ForecastRow[]).reduce((s, r) => s + (r.monto_extras || 0), 0);
+      setMontoExtrasGlobal(totalExtras.toString());
       setEditMode(false);
       setHasUnsavedChanges(false);
     }
@@ -119,17 +122,18 @@ export default function ForecastContractualPage() {
   };
 
   const calcForecast = (client: string) => {
-    const extras = parseFloat(editData[client]?.monto_extras || "0") || 0;
-    return calcVentaBase(client) + Math.round(extras);
+    return calcVentaBase(client);
   };
 
   // ── Save All ──
   const handleSaveAll = async () => {
     setSaving(true);
-    const payloads = allClients.map(client => {
+    const extras = parseFloat(montoExtrasGlobal || "0") || 0;
+    const payloads = allClients.map((client, index) => {
       const d = editData[client] || {};
       const ventaBase = calcVentaBase(client);
-      const extras = parseFloat(d.monto_extras || "0") || 0;
+      // Store the global extras only on the first client row for persistence
+      const clientExtras = index === 0 ? extras : 0;
       return {
         cliente_estandar: client,
         mes_proyeccion: mesDate,
@@ -140,8 +144,8 @@ export default function ForecastContractualPage() {
         viernes_clp: parseFloat(d.viernes_clp || "0") || 0,
         sabado_clp: parseFloat(d.sabado_clp || "0") || 0,
         venta_base_proyectada: ventaBase,
-        monto_extras: extras,
-        forecast_final_contractual: ventaBase + Math.round(extras),
+        monto_extras: clientExtras,
+        forecast_final_contractual: ventaBase,
         usuario_registro: user?.email || "",
         actualizado_el: new Date().toISOString(),
       };
@@ -165,7 +169,7 @@ export default function ForecastContractualPage() {
     if (editData[addingClient]) { toast({ title: "Ya existe", variant: "destructive" }); return; }
     setEditData(prev => ({
       ...prev,
-      [addingClient]: Object.fromEntries([...DAYS.map(d => [d, "0"]), ["monto_extras", "0"]]),
+      [addingClient]: Object.fromEntries(DAYS.map(d => [d, "0"])),
     }));
     setAddingClient("");
     setHasUnsavedChanges(true);
@@ -179,7 +183,9 @@ export default function ForecastContractualPage() {
 
   const formatCLP = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(0)}K` : `$${n}`;
 
-  const totalForecast = allClients.reduce((s, c) => s + calcForecast(c), 0);
+  const totalVentaBase = allClients.reduce((s, c) => s + calcVentaBase(c), 0);
+  const extrasGlobal = parseFloat(montoExtrasGlobal || "0") || 0;
+  const totalForecast = totalVentaBase + Math.round(extrasGlobal);
 
   const months = useMemo(() => {
     const result: string[] = [];
@@ -195,18 +201,18 @@ export default function ForecastContractualPage() {
   const handleDownloadTemplate = () => {
     const clients = uniqueValues.clientes.sort();
     const wsData = [
-      ["Cliente", ...DAY_EXCEL_HEADERS, "Extras"],
+      ["Cliente", ...DAY_EXCEL_HEADERS],
       ...clients.map(c => {
         const existing = editData[c];
         if (existing) {
-          return [c, ...DAYS.map(d => parseFloat(existing[d] || "0") || 0), parseFloat(existing.monto_extras || "0") || 0];
+          return [c, ...DAYS.map(d => parseFloat(existing[d] || "0") || 0)];
         }
-        return [c, 0, 0, 0, 0, 0, 0, 0];
+        return [c, 0, 0, 0, 0, 0, 0];
       }),
     ];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     // Set column widths
-    ws["!cols"] = [{ wch: 30 }, ...Array(7).fill({ wch: 14 })];
+    ws["!cols"] = [{ wch: 30 }, ...Array(6).fill({ wch: 14 })];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Forecast");
     XLSX.writeFile(wb, `Forecast_Contractual_${selectedMonth}.xlsx`);
@@ -237,7 +243,6 @@ export default function ForecastContractualPage() {
             jueves_clp: (row["Jueves"] ?? 0).toString(),
             viernes_clp: (row["Viernes"] ?? 0).toString(),
             sabado_clp: (row["Sábado"] ?? row["Sabado"] ?? 0).toString(),
-            monto_extras: (row["Extras"] ?? 0).toString(),
           };
           imported++;
         }
@@ -273,10 +278,30 @@ export default function ForecastContractualPage() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard title="Forecast Total" value={formatCLP(totalForecast)} icon={<DollarSign className="w-5 h-5" />} subtitle={selectedMonth} />
-        <KpiCard title="Clientes Registrados" value={allClients.length.toString()} icon={<TrendingUp className="w-5 h-5" />} subtitle="En matriz" />
-        <KpiCard title="Días Hábiles" value={businessDays.toString()} icon={<Calculator className="w-5 h-5" />} subtitle={`${selectedMonth} (Lun-Sáb)`} />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <KpiCard title="Venta Base Total" value={formatCLP(totalVentaBase)} icon={<TrendingUp className="w-5 h-5" />} subtitle={selectedMonth} />
+        <KpiCard title="Monto Extras" value={formatCLP(extrasGlobal)} icon={<DollarSign className="w-5 h-5" />} subtitle="Acumulado" />
+        <KpiCard title="Forecast Total" value={formatCLP(totalForecast)} icon={<DollarSign className="w-5 h-5" />} subtitle="Base + Extras" />
+        <KpiCard title="Clientes / Días Hábiles" value={`${allClients.length} / ${businessDays}`} icon={<Calculator className="w-5 h-5" />} subtitle={`${selectedMonth} (Lun-Sáb)`} />
+      </div>
+
+      {/* Monto Extras Global */}
+      <div className="card-executive p-4 flex items-end gap-4">
+        <div className="space-y-1">
+          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Monto Extras (acumulado mensual)</label>
+          {isEditable ? (
+            <Input
+              className="h-8 w-48 text-xs"
+              type="number"
+              value={montoExtrasGlobal}
+              onChange={(e) => { setMontoExtrasGlobal(e.target.value); setHasUnsavedChanges(true); }}
+              placeholder="0"
+            />
+          ) : (
+            <p className="text-sm font-semibold text-primary">{formatCLP(extrasGlobal)}</p>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground pb-1">Este monto se suma al total de venta base para calcular el Forecast Final.</p>
       </div>
 
       {/* Actions bar */}
@@ -347,8 +372,6 @@ export default function ForecastContractualPage() {
                   {DAY_LABELS.map(d => <TableHead key={d} className="text-xs text-center">{d}</TableHead>)}
                   <TableHead className="text-xs text-center">Semanal</TableHead>
                   <TableHead className="text-xs text-center">Venta Base</TableHead>
-                  <TableHead className="text-xs text-center">Extras</TableHead>
-                  <TableHead className="text-xs text-center">Forecast</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -356,7 +379,6 @@ export default function ForecastContractualPage() {
                   const d = editData[client] || {};
                   const semanal = DAYS.reduce((s, day) => s + (parseFloat(d[day] || "0") || 0), 0);
                   const ventaBase = calcVentaBase(client);
-                  const forecast = calcForecast(client);
 
                   return (
                     <TableRow key={client}>
@@ -377,19 +399,6 @@ export default function ForecastContractualPage() {
                       ))}
                       <TableCell className="text-xs text-center font-mono">{formatCLP(semanal)}</TableCell>
                       <TableCell className="text-xs text-center font-semibold text-electric-blue">{formatCLP(ventaBase)}</TableCell>
-                      <TableCell>
-                        {isEditable ? (
-                          <Input
-                            className="h-7 w-20 text-xs text-center"
-                            type="number"
-                            value={d.monto_extras || "0"}
-                            onChange={(e) => handleCellChange(client, "monto_extras", e.target.value)}
-                          />
-                        ) : (
-                          <span className="text-xs font-mono">{formatCLP(parseFloat(d.monto_extras || "0") || 0)}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-center font-bold text-primary">{formatCLP(forecast)}</TableCell>
                     </TableRow>
                   );
                 })}
