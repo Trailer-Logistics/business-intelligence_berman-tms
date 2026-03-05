@@ -195,7 +195,7 @@ export default function ForecastingPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
                   <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={11} />
-                  <YAxis stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} />
+                  <YAxis stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} domain={[0, () => Math.round(forecastTotal * 1.1)]} />
                   <Tooltip
                     contentStyle={tooltipStyle}
                     content={({ active, payload, label }) => {
@@ -233,8 +233,8 @@ export default function ForecastingPage() {
                         const { x, y: ly } = viewBox || {};
                         return (
                           <g>
-                            <rect x={(x || 0) + 4} y={(ly || 0) - 24} width={120} height={18} rx={4} fill="hsla(0, 0%, 100%, 0.15)" />
-                            <text x={(x || 0) + 10} y={(ly || 0) - 11} fill="hsl(0, 85%, 55%)" fontSize={11} fontWeight={600}>
+                            <rect x={(x || 0) + 4} y={(ly || 0) + 6} width={130} height={20} rx={4} fill="hsla(0, 0%, 100%, 0.12)" />
+                            <text x={(x || 0) + 10} y={(ly || 0) + 20} fill="white" fontSize={11} fontWeight={600}>
                               Meta {formatCLP(forecastTotal)}
                             </text>
                           </g>

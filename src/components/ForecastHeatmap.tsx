@@ -8,22 +8,28 @@ interface ForecastRow {
   jueves_clp: number | null;
   viernes_clp: number | null;
   sabado_clp: number | null;
+  cliente_estandar: string;
   [key: string]: any;
+}
+
+interface ClientDayDetail {
+  real: number;
+  forecast: number;
+  delta: number; // percentage
 }
 
 interface DayCell {
   date: string;
   dayOfMonth: number;
-  dow: number; // 0=Sun
+  dow: number;
   real: number;
   forecast: number;
-  clientBreakdown: Record<string, number>;
+  clientDetails: Record<string, ClientDayDetail>;
   isCurrentMonth: boolean;
 }
 
 const DOW_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-// Map JS day-of-week (0=Sun) to forecast column
 const DOW_TO_COL: Record<number, keyof ForecastRow> = {
   1: "lunes_clp",
   2: "martes_clp",
@@ -50,33 +56,45 @@ interface ForecastHeatmapProps {
 export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapProps) {
   const { filteredViajes, filters } = useViajes();
 
-  // Calculate daily forecast per DOW from forecast rows
-  const dowForecastMap = useMemo(() => {
-    const map: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  // Per-client, per-DOW forecast map
+  const clientDowForecast = useMemo(() => {
+    const map: Record<string, Record<number, number>> = {};
     for (const row of forecastRows) {
+      const client = row.cliente_estandar || "Otros";
+      if (!map[client]) map[client] = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       for (const [dow, col] of Object.entries(DOW_TO_COL)) {
-        map[Number(dow)] += Number(row[col]) || 0;
+        map[client][Number(dow)] += Number(row[col]) || 0;
       }
     }
     return map;
   }, [forecastRows]);
 
+  // Total DOW forecast (sum across all clients)
+  const dowForecastMap = useMemo(() => {
+    const map: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    for (const clientMap of Object.values(clientDowForecast)) {
+      for (let i = 0; i <= 6; i++) map[i] += clientMap[i] || 0;
+    }
+    return map;
+  }, [clientDowForecast]);
+
+  // All forecast client names
+  const forecastClients = useMemo(() => Object.keys(clientDowForecast), [clientDowForecast]);
+
   const { cells, totalForecast } = useMemo(() => {
-    // Build daily map
-    const dailyMap: Record<string, { real: number; clients: Record<string, number> }> = {};
+    // Build daily real per client
+    const dailyMap: Record<string, Record<string, number>> = {};
     for (const v of filteredViajes) {
       const estado = v.estado_viaje_estandar?.toLowerCase() || "";
       if (estado.includes("anulado") || estado.includes("programado")) continue;
       if (!v.fecha_salida_origen) continue;
       const d = typeof v.fecha_salida_origen === "string" ? v.fecha_salida_origen.slice(0, 10) : "";
       if (!d) continue;
-      if (!dailyMap[d]) dailyMap[d] = { real: 0, clients: {} };
-      dailyMap[d].real += v.tarifa_venta || 0;
+      if (!dailyMap[d]) dailyMap[d] = {};
       const c = v.cliente_estandar || "Otros";
-      dailyMap[d].clients[c] = (dailyMap[d].clients[c] || 0) + (v.tarifa_venta || 0);
+      dailyMap[d][c] = (dailyMap[d][c] || 0) + (v.tarifa_venta || 0);
     }
 
-    // Generate calendar grid for the filter month
     const fromDate = new Date(filters.dateFrom);
     const year = fromDate.getFullYear();
     const month = fromDate.getMonth();
@@ -88,34 +106,45 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
     for (let d = 1; d <= daysInMonth; d++) {
       const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const dow = new Date(year, month, d).getDay();
-      const entry = dailyMap[date];
-      const real = entry?.real || 0;
+      const dayClients = dailyMap[date] || {};
       const forecast = dowForecastMap[dow] || 0;
+      const real = Object.values(dayClients).reduce((a, b) => a + b, 0);
       totalForecast += forecast;
+
+      // Build per-client detail for this day
+      const allClients = new Set([...Object.keys(dayClients), ...forecastClients]);
+      const clientDetails: Record<string, ClientDayDetail> = {};
+      for (const client of allClients) {
+        const cReal = dayClients[client] || 0;
+        const cForecast = clientDowForecast[client]?.[dow] || 0;
+        if (cReal === 0 && cForecast === 0) continue;
+        const delta = cForecast > 0 ? ((cReal / cForecast - 1) * 100) : (cReal > 0 ? 100 : 0);
+        clientDetails[client] = { real: cReal, forecast: cForecast, delta };
+      }
+
       cells.push({
         date,
         dayOfMonth: d,
         dow,
         real: Math.round(real),
         forecast: Math.round(forecast),
-        clientBreakdown: entry?.clients || {},
+        clientDetails,
         isCurrentMonth: true,
       });
     }
 
     return { cells, totalForecast };
-  }, [filteredViajes, filters.dateFrom, dowForecastMap]);
+  }, [filteredViajes, filters.dateFrom, dowForecastMap, forecastClients, clientDowForecast]);
 
   // Group by weeks
   const weeks = useMemo(() => {
     const result: DayCell[][] = [];
     let current: DayCell[] = [];
 
-    // Pad start
     if (cells.length > 0) {
       const firstDow = cells[0].dow;
       for (let i = 0; i < firstDow; i++) {
-        current.push({ date: "", dayOfMonth: 0, dow: i, real: 0, forecast: 0, clientBreakdown: {}, isCurrentMonth: false });
+        current.push({ date: "", dayOfMonth: 0, dow: i, real: 0, forecast: 0, clientDetails: {}, isCurrentMonth: false });
       }
     }
 
@@ -128,7 +157,7 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
     }
     if (current.length > 0) {
       while (current.length < 7) {
-        current.push({ date: "", dayOfMonth: 0, dow: current.length, real: 0, forecast: 0, clientBreakdown: {}, isCurrentMonth: false });
+        current.push({ date: "", dayOfMonth: 0, dow: current.length, real: 0, forecast: 0, clientDetails: {}, isCurrentMonth: false });
       }
       result.push(current);
     }
@@ -171,25 +200,32 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
                     {/* Tooltip */}
                     {(cell.real > 0 || cell.forecast > 0) && (
                       <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block">
-                        <div className="card-executive p-3 shadow-xl min-w-[180px] border border-border">
+                        <div className="card-executive p-3 shadow-xl min-w-[220px] border border-border">
                           <p className="text-[10px] font-semibold text-foreground mb-1">{cell.date}</p>
                           <p className="text-[10px] text-primary font-bold">Real: {formatCLP(cell.real)}</p>
                           <p className="text-[10px] text-warning font-bold">Forecast: {formatCLP(cell.forecast)}</p>
                           {cell.forecast > 0 && (
-                            <p className={`text-[10px] font-bold ${cell.real >= cell.forecast ? "text-success" : "text-destructive"}`}>
+                            <p className={`text-[10px] font-bold mb-2 ${cell.real >= cell.forecast ? "text-success" : "text-destructive"}`}>
                               Δ {((cell.real / cell.forecast - 1) * 100).toFixed(1)}%
                             </p>
                           )}
-                          <div className="space-y-0.5">
-                            {Object.entries(cell.clientBreakdown)
-                              .sort((a, b) => b[1] - a[1])
-                              .slice(0, 5)
-                              .map(([client, amount]) => (
-                                <div key={client} className="flex justify-between text-[9px] text-muted-foreground">
-                                  <span className="truncate mr-2">{client}</span>
-                                  <span className="font-mono">{formatCLP(amount)}</span>
-                                </div>
-                              ))}
+                          {/* Per-client breakdown - show red clients first */}
+                          <div className="space-y-0.5 border-t border-border pt-1">
+                            <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Detalle por cliente:</p>
+                            {Object.entries(cell.clientDetails)
+                              .sort((a, b) => a[1].delta - b[1].delta) // worst first
+                              .slice(0, 8)
+                              .map(([client, detail]) => {
+                                const isRed = detail.forecast > 0 && detail.real < detail.forecast;
+                                return (
+                                  <div key={client} className="flex justify-between text-[9px] gap-2">
+                                    <span className={`truncate ${isRed ? "text-destructive font-semibold" : "text-muted-foreground"}`}>{client}</span>
+                                    <span className={`font-mono whitespace-nowrap ${isRed ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                                      {formatCLP(detail.real)} {detail.forecast > 0 ? `(${detail.delta >= 0 ? "+" : ""}${detail.delta.toFixed(0)}%)` : ""}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                           </div>
                         </div>
                       </div>
