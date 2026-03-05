@@ -151,6 +151,7 @@ export default function ForecastContractualPage() {
       };
     });
 
+    console.log('PAYLOAD FORECAST:', JSON.stringify(payloads));
     const { error } = await supabase
       .from("r_forecast_contractual")
       .upsert(payloads, { onConflict: "cliente_estandar,mes_proyeccion" });
