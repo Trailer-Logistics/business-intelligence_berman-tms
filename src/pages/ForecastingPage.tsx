@@ -277,7 +277,7 @@ export default function ForecastingPage() {
             ) : <p className="text-muted-foreground text-center py-10 text-sm">Sin datos para el mes seleccionado</p>}
           </div>
 
-          <ForecastHeatmap />
+          <ForecastHeatmap forecastRows={forecastRows} />
 
           <div className="card-executive p-4 border-l-4 border-l-primary">
             <p className="text-xs text-muted-foreground">
