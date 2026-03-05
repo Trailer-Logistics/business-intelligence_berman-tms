@@ -70,7 +70,9 @@ export default function ForecastingPage() {
 
   // Total forecast goal (sum of all clients' forecast_final_contractual)
   const forecastTotal = useMemo(() => {
-    return forecastRows.reduce((acc: number, r: any) => acc + (Number(r.forecast_final_contractual) || 0), 0);
+    const base = forecastRows.reduce((acc: number, r: any) => acc + (Number(r.forecast_final_contractual) || 0), 0);
+    const extras = forecastRows.reduce((acc: number, r: any) => acc + (Number(r.monto_extras) || 0), 0);
+    return base + extras;
   }, [forecastRows]);
 
   // Operating days for the selected month
