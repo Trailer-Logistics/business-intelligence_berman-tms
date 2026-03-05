@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useViajes } from "@/hooks/useViajes";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Save, Calculator, DollarSign, Loader2, Plus } from "lucide-react";
+import { TrendingUp, Save, Calculator, DollarSign, Loader2, Plus, Download, Upload, Pencil } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface ForecastRow {
   id: string;
@@ -29,12 +30,13 @@ interface ForecastRow {
 
 const DAYS = ["lunes_clp", "martes_clp", "miercoles_clp", "jueves_clp", "viernes_clp", "sabado_clp"] as const;
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DAY_EXCEL_HEADERS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 function countWeekdaysInMonth(year: number, month: number) {
-  const counts = [0, 0, 0, 0, 0, 0]; // Mon-Sat
+  const counts = [0, 0, 0, 0, 0, 0];
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   for (let d = 1; d <= daysInMonth; d++) {
-    const dow = new Date(year, month, d).getDay(); // 0=Sun
+    const dow = new Date(year, month, d).getDay();
     if (dow >= 1 && dow <= 6) counts[dow - 1]++;
   }
   return counts;
@@ -53,6 +55,7 @@ function getBusinessDays(year: number, month: number) {
 export default function ForecastContractualPage() {
   const { user } = useAuth();
   const { uniqueValues } = useViajes();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -62,6 +65,8 @@ export default function ForecastContractualPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [addingClient, setAddingClient] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const mesDate = `${selectedMonth}-01`;
   const [year, monthNum] = selectedMonth.split("-").map(Number);
@@ -85,17 +90,23 @@ export default function ForecastContractualPage() {
         };
       }
       setEditData(edit);
+      setEditMode(false);
+      setHasUnsavedChanges(false);
     }
     setLoading(false);
   };
 
   useEffect(() => { fetchRows(); }, [mesDate]);
 
+  // Determine if data already exists for this month (saved rows)
+  const hasSavedData = rows.length > 0;
+
   const handleCellChange = (client: string, field: string, value: string) => {
     setEditData(prev => ({
       ...prev,
       [client]: { ...(prev[client] || {}), [field]: value },
     }));
+    setHasUnsavedChanges(true);
   };
 
   const calcVentaBase = (client: string) => {
@@ -112,36 +123,38 @@ export default function ForecastContractualPage() {
     return calcVentaBase(client) + Math.round(extras);
   };
 
-  const handleSave = async (client: string) => {
+  // ── Save All ──
+  const handleSaveAll = async () => {
     setSaving(true);
-    const d = editData[client] || {};
-    const ventaBase = calcVentaBase(client);
-    const extras = parseFloat(d.monto_extras || "0") || 0;
-
-    const payload = {
-      cliente_estandar: client,
-      mes_proyeccion: mesDate,
-      lunes_clp: parseFloat(d.lunes_clp || "0") || 0,
-      martes_clp: parseFloat(d.martes_clp || "0") || 0,
-      miercoles_clp: parseFloat(d.miercoles_clp || "0") || 0,
-      jueves_clp: parseFloat(d.jueves_clp || "0") || 0,
-      viernes_clp: parseFloat(d.viernes_clp || "0") || 0,
-      sabado_clp: parseFloat(d.sabado_clp || "0") || 0,
-      venta_base_proyectada: ventaBase,
-      monto_extras: extras,
-      forecast_final_contractual: ventaBase + Math.round(extras),
-      usuario_registro: user?.email || "",
-      actualizado_el: new Date().toISOString(),
-    };
+    const payloads = allClients.map(client => {
+      const d = editData[client] || {};
+      const ventaBase = calcVentaBase(client);
+      const extras = parseFloat(d.monto_extras || "0") || 0;
+      return {
+        cliente_estandar: client,
+        mes_proyeccion: mesDate,
+        lunes_clp: parseFloat(d.lunes_clp || "0") || 0,
+        martes_clp: parseFloat(d.martes_clp || "0") || 0,
+        miercoles_clp: parseFloat(d.miercoles_clp || "0") || 0,
+        jueves_clp: parseFloat(d.jueves_clp || "0") || 0,
+        viernes_clp: parseFloat(d.viernes_clp || "0") || 0,
+        sabado_clp: parseFloat(d.sabado_clp || "0") || 0,
+        venta_base_proyectada: ventaBase,
+        monto_extras: extras,
+        forecast_final_contractual: ventaBase + Math.round(extras),
+        usuario_registro: user?.email || "",
+        actualizado_el: new Date().toISOString(),
+      };
+    });
 
     const { error } = await supabase
       .from("r_forecast_contractual")
-      .upsert(payload, { onConflict: "cliente_estandar,mes_proyeccion" });
+      .upsert(payloads, { onConflict: "cliente_estandar,mes_proyeccion" });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Guardado", description: `Forecast ${client} actualizado.` });
+      toast({ title: "Guardado", description: `${payloads.length} registros actualizados para ${selectedMonth}.` });
       fetchRows();
     }
     setSaving(false);
@@ -155,6 +168,8 @@ export default function ForecastContractualPage() {
       [addingClient]: Object.fromEntries([...DAYS.map(d => [d, "0"]), ["monto_extras", "0"]]),
     }));
     setAddingClient("");
+    setHasUnsavedChanges(true);
+    if (!editMode) setEditMode(true);
   };
 
   const allClients = useMemo(() => {
@@ -175,6 +190,73 @@ export default function ForecastContractualPage() {
     }
     return result;
   }, []);
+
+  // ── Download Excel Template ──
+  const handleDownloadTemplate = () => {
+    const clients = uniqueValues.clientes.sort();
+    const wsData = [
+      ["Cliente", ...DAY_EXCEL_HEADERS, "Extras"],
+      ...clients.map(c => {
+        const existing = editData[c];
+        if (existing) {
+          return [c, ...DAYS.map(d => parseFloat(existing[d] || "0") || 0), parseFloat(existing.monto_extras || "0") || 0];
+        }
+        return [c, 0, 0, 0, 0, 0, 0, 0];
+      }),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // Set column widths
+    ws["!cols"] = [{ wch: 30 }, ...Array(7).fill({ wch: 14 })];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Forecast");
+    XLSX.writeFile(wb, `Forecast_Contractual_${selectedMonth}.xlsx`);
+    toast({ title: "Descargado", description: "Plantilla Excel generada." });
+  };
+
+  // ── Upload Excel ──
+  const handleUploadExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: "binary" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
+
+        const newEdit: Record<string, Record<string, string>> = { ...editData };
+        let imported = 0;
+
+        for (const row of jsonData) {
+          const client = (row["Cliente"] || "").toString().trim();
+          if (!client) continue;
+          newEdit[client] = {
+            lunes_clp: (row["Lunes"] ?? 0).toString(),
+            martes_clp: (row["Martes"] ?? 0).toString(),
+            miercoles_clp: (row["Miércoles"] ?? row["Miercoles"] ?? 0).toString(),
+            jueves_clp: (row["Jueves"] ?? 0).toString(),
+            viernes_clp: (row["Viernes"] ?? 0).toString(),
+            sabado_clp: (row["Sábado"] ?? row["Sabado"] ?? 0).toString(),
+            monto_extras: (row["Extras"] ?? 0).toString(),
+          };
+          imported++;
+        }
+
+        setEditData(newEdit);
+        setHasUnsavedChanges(true);
+        if (!editMode) setEditMode(true);
+        toast({ title: "Importado", description: `${imported} clientes cargados desde Excel. Presiona Guardar Todo para confirmar.` });
+      } catch {
+        toast({ title: "Error", description: "No se pudo leer el archivo Excel.", variant: "destructive" });
+      }
+    };
+    reader.readAsBinaryString(file);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Whether inputs are editable
+  const isEditable = !hasSavedData || editMode;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -197,9 +279,9 @@ export default function ForecastContractualPage() {
         <KpiCard title="Días Hábiles" value={businessDays.toString()} icon={<Calculator className="w-5 h-5" />} subtitle={`${selectedMonth} (Lun-Sáb)`} />
       </div>
 
-      {/* Add client */}
-      <div className="card-executive p-4 flex items-end gap-3">
-        <div className="flex-1 space-y-1">
+      {/* Actions bar */}
+      <div className="card-executive p-4 flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[200px] space-y-1">
           <label className="text-[10px] text-muted-foreground uppercase">Agregar Cliente</label>
           <Select value={addingClient} onValueChange={setAddingClient}>
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
@@ -211,17 +293,52 @@ export default function ForecastContractualPage() {
         <Button size="sm" className="h-8" onClick={handleAddClient} disabled={!addingClient}>
           <Plus className="w-3 h-3 mr-1" /> Agregar
         </Button>
+
+        <div className="border-l border-border h-6 mx-1" />
+
+        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleDownloadTemplate}>
+          <Download className="w-3 h-3 mr-1" /> Descargar Plantilla
+        </Button>
+        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => fileInputRef.current?.click()}>
+          <Upload className="w-3 h-3 mr-1" /> Cargar Excel
+        </Button>
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleUploadExcel} />
+
+        {hasSavedData && !editMode && (
+          <>
+            <div className="border-l border-border h-6 mx-1" />
+            <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => setEditMode(true)}>
+              <Pencil className="w-3 h-3 mr-1" /> Editar
+            </Button>
+          </>
+        )}
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
       ) : (
         <div className="card-executive p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-2">Matriz de Forecast</h3>
-          <p className="text-[10px] text-muted-foreground mb-4">
-            Ingrese el monto diario por cliente. La Venta Base se calcula como (Monto × Ocurrencias del día en el mes).
-            Ocurrencias: {DAY_LABELS.map((d, i) => `${d}=${weekdayCounts[i]}`).join(", ")}
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Matriz de Forecast</h3>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Ingrese el monto diario por cliente. Ocurrencias: {DAY_LABELS.map((d, i) => `${d}=${weekdayCounts[i]}`).join(", ")}
+              </p>
+            </div>
+            {isEditable && allClients.length > 0 && (
+              <Button size="sm" className="h-8 text-xs px-4" onClick={handleSaveAll} disabled={saving}>
+                {saving ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Save className="w-3 h-3 mr-1" />}
+                Guardar Todo
+              </Button>
+            )}
+          </div>
+
+          {hasUnsavedChanges && (
+            <div className="bg-warning/10 border border-warning/30 rounded-md px-3 py-1.5 mb-3">
+              <p className="text-[10px] text-warning font-medium">⚠ Hay cambios sin guardar. Presiona "Guardar Todo" para confirmar.</p>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -232,7 +349,6 @@ export default function ForecastContractualPage() {
                   <TableHead className="text-xs text-center">Venta Base</TableHead>
                   <TableHead className="text-xs text-center">Extras</TableHead>
                   <TableHead className="text-xs text-center">Forecast</TableHead>
-                  <TableHead className="text-xs"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -247,30 +363,33 @@ export default function ForecastContractualPage() {
                       <TableCell className="text-xs font-medium">{client}</TableCell>
                       {DAYS.map(day => (
                         <TableCell key={day}>
-                          <Input
-                            className="h-7 w-20 text-xs text-center"
-                            type="number"
-                            value={d[day] || "0"}
-                            onChange={(e) => handleCellChange(client, day, e.target.value)}
-                          />
+                          {isEditable ? (
+                            <Input
+                              className="h-7 w-20 text-xs text-center"
+                              type="number"
+                              value={d[day] || "0"}
+                              onChange={(e) => handleCellChange(client, day, e.target.value)}
+                            />
+                          ) : (
+                            <span className="text-xs font-mono">{formatCLP(parseFloat(d[day] || "0") || 0)}</span>
+                          )}
                         </TableCell>
                       ))}
                       <TableCell className="text-xs text-center font-mono">{formatCLP(semanal)}</TableCell>
                       <TableCell className="text-xs text-center font-semibold text-electric-blue">{formatCLP(ventaBase)}</TableCell>
                       <TableCell>
-                        <Input
-                          className="h-7 w-20 text-xs text-center"
-                          type="number"
-                          value={d.monto_extras || "0"}
-                          onChange={(e) => handleCellChange(client, "monto_extras", e.target.value)}
-                        />
+                        {isEditable ? (
+                          <Input
+                            className="h-7 w-20 text-xs text-center"
+                            type="number"
+                            value={d.monto_extras || "0"}
+                            onChange={(e) => handleCellChange(client, "monto_extras", e.target.value)}
+                          />
+                        ) : (
+                          <span className="text-xs font-mono">{formatCLP(parseFloat(d.monto_extras || "0") || 0)}</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-center font-bold text-primary">{formatCLP(forecast)}</TableCell>
-                      <TableCell>
-                        <Button size="sm" className="h-7 text-xs px-2" onClick={() => handleSave(client)} disabled={saving}>
-                          <Save className="w-3 h-3" />
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   );
                 })}
