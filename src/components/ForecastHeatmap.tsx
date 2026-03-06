@@ -86,9 +86,8 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
     for (const v of filteredViajes) {
       const estado = v.estado_viaje_estandar?.toLowerCase() || "";
       if (estado.includes("anulado") || estado.includes("programado")) continue;
-      const rawDate = v.fecha_creacion_viaje || v.fecha_salida_origen;
-      if (!rawDate) continue;
-      const d = typeof rawDate === "string" ? rawDate.slice(0, 10) : "";
+      if (!v.fecha_salida_origen) continue;
+      const d = typeof v.fecha_salida_origen === "string" ? v.fecha_salida_origen.slice(0, 10) : "";
       if (!d) continue;
       if (!dailyMap[d]) dailyMap[d] = {};
       const c = v.cliente_estandar || "Otros";
