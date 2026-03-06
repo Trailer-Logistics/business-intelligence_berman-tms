@@ -39,7 +39,8 @@ const DOW_TO_COL: Record<number, keyof ForecastRow> = {
   6: "sabado_clp",
 };
 
-function getColor(real: number, forecast: number): string {
+function getColor(real: number, forecast: number, dow: number): string {
+  if (real === 0 && dow === 0) return "bg-primary/10 border border-primary/20";
   if (real === 0) return "bg-muted/15 border border-border/30";
   if (forecast === 0) return "bg-muted/20";
   const ratio = real / forecast;
@@ -193,7 +194,7 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
               <div
                 key={ci}
                 className={`relative aspect-square rounded-md flex flex-col items-center justify-center transition-all cursor-default ${
-                  !cell.isCurrentMonth ? "opacity-20" : getColor(cell.real, cell.forecast)
+                  !cell.isCurrentMonth ? "opacity-20" : getColor(cell.real, cell.forecast, cell.dow)
                 } ${cell.isCurrentMonth && hasData(cell) ? "group" : ""}`}
               >
                 {cell.isCurrentMonth && (
@@ -220,10 +221,11 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
                               .slice(0, 8)
                               .map(([client, detail]) => {
                                 const isRed = detail.forecast > 0 && detail.real < detail.forecast;
+                                const isGreen = detail.delta > 0;
                                 return (
                                   <div key={client} className="flex justify-between text-[9px] gap-2">
-                                    <span className={`truncate ${isRed ? "text-destructive font-semibold" : "text-muted-foreground"}`}>{client}</span>
-                                    <span className={`font-mono whitespace-nowrap ${isRed ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                                    <span className={`truncate ${isRed ? "text-destructive font-semibold" : isGreen ? "text-success font-semibold" : "text-muted-foreground"}`}>{client}</span>
+                                    <span className={`font-mono whitespace-nowrap ${isRed ? "text-destructive font-semibold" : isGreen ? "text-success font-semibold" : "text-muted-foreground"}`}>
                                       {formatCLP(detail.real)} {detail.forecast > 0 ? `(${detail.delta >= 0 ? "+" : ""}${detail.delta.toFixed(0)}%)` : ""}
                                     </span>
                                   </div>
