@@ -40,7 +40,7 @@ const DOW_TO_COL: Record<number, keyof ForecastRow> = {
 };
 
 function getColor(real: number, forecast: number): string {
-  if (forecast === 0 && real === 0) return "bg-muted/15 border border-border/30";
+  if (real === 0) return "bg-muted/15 border border-border/30";
   if (forecast === 0) return "bg-muted/20";
   const ratio = real / forecast;
   if (ratio >= 0.95) return "bg-success/50";
@@ -49,7 +49,7 @@ function getColor(real: number, forecast: number): string {
 }
 
 function hasData(cell: { real: number; forecast: number }): boolean {
-  return cell.real > 0 || cell.forecast > 0;
+  return cell.real > 0;
 }
 
 interface ForecastHeatmapProps {
