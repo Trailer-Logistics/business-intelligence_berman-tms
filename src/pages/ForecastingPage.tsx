@@ -189,8 +189,8 @@ export default function ForecastingPage() {
                 <ComposedChart data={chartData}>
                   <defs>
                     <linearGradient id="areaReal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(220, 90%, 55%)" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="hsl(220, 90%, 55%)" stopOpacity={0.03} />
+                      <stop offset="0%" stopColor="#00E5FF" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#00E5FF" stopOpacity={0.03} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
@@ -209,7 +209,7 @@ export default function ForecastingPage() {
                       return (
                         <div style={tooltipStyle} className="p-2">
                           <p className="font-semibold mb-1">{label}</p>
-                          {real != null && <p style={{ color: "hsl(220, 90%, 55%)" }}>Venta Real: ${real.toLocaleString("es-CL")}</p>}
+                          {real != null && <p style={{ color: "#00E5FF" }}>Venta Real: ${real.toLocaleString("es-CL")}</p>}
                           {forecast != null && <p style={{ color: "hsl(45, 90%, 55%)" }}>Forecast Acum: ${forecast.toLocaleString("es-CL")}</p>}
                           {projected != null && <p style={{ color: "hsl(160, 70%, 50%)" }}>Proyectada: ${projected.toLocaleString("es-CL")}</p>}
                           {pctDiff != null && (
@@ -246,7 +246,7 @@ export default function ForecastingPage() {
                   <Area
                     type="monotone"
                     dataKey="real"
-                    stroke="hsl(220, 90%, 55%)"
+                    stroke="#00E5FF"
                     strokeWidth={2.5}
                     fill="url(#areaReal)"
                     dot={{ r: 3, fill: "hsl(220, 90%, 55%)" }}
