@@ -40,12 +40,16 @@ const DOW_TO_COL: Record<number, keyof ForecastRow> = {
 };
 
 function getColor(real: number, forecast: number): string {
-  if (forecast === 0 && real === 0) return "bg-muted/30";
-  if (forecast === 0) return "bg-muted/20"; // no forecast defined → gray
+  if (forecast === 0 && real === 0) return "bg-muted/15 border border-border/30";
+  if (forecast === 0) return "bg-muted/20";
   const ratio = real / forecast;
   if (ratio >= 0.95) return "bg-success/50";
   if (ratio >= 0.70) return "bg-warning/50";
   return "bg-destructive/50";
+}
+
+function hasData(cell: { real: number; forecast: number }): boolean {
+  return cell.real > 0 || cell.forecast > 0;
 }
 
 interface ForecastHeatmapProps {
@@ -188,32 +192,31 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
             {week.map((cell, ci) => (
               <div
                 key={ci}
-                className={`relative aspect-square rounded-md flex flex-col items-center justify-center transition-all group cursor-default ${
+                className={`relative aspect-square rounded-md flex flex-col items-center justify-center transition-all cursor-default ${
                   !cell.isCurrentMonth ? "opacity-20" : getColor(cell.real, cell.forecast)
-                }`}
+                } ${cell.isCurrentMonth && hasData(cell) ? "group" : ""}`}
               >
                 {cell.isCurrentMonth && (
                   <>
-                    <span className="text-[10px] font-medium text-foreground">{cell.dayOfMonth}</span>
+                    <span className={`text-[10px] font-medium ${hasData(cell) ? "text-foreground" : "text-muted-foreground/50"}`}>{cell.dayOfMonth}</span>
                     <span className="text-[8px] text-foreground/70">{cell.real > 0 ? formatCLP(cell.real) : ""}</span>
 
-                    {/* Tooltip */}
-                    {(cell.real > 0 || cell.forecast > 0) && (
+                    {/* Tooltip - only when there's data */}
+                    {hasData(cell) && (
                       <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block">
                         <div className="card-executive p-3 shadow-xl min-w-[220px] border border-border">
                           <p className="text-[10px] font-semibold text-foreground mb-1">{cell.date}</p>
                           <p className="text-[10px] text-primary font-bold">Real: {formatCLP(cell.real)}</p>
                           <p className="text-[10px] text-warning font-bold">Forecast: {formatCLP(cell.forecast)}</p>
                           {cell.forecast > 0 && (
-                            <p className={`text-[10px] font-bold mb-2 ${cell.real >= cell.forecast ? "text-success" : "text-destructive"}`}>
+                            <p className="text-[10px] font-bold mb-2 text-success">
                               Δ {((cell.real / cell.forecast - 1) * 100).toFixed(1)}%
                             </p>
                           )}
-                          {/* Per-client breakdown - show red clients first */}
                           <div className="space-y-0.5 border-t border-border pt-1">
                             <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Detalle por cliente:</p>
                             {Object.entries(cell.clientDetails)
-                              .sort((a, b) => a[1].delta - b[1].delta) // worst first
+                              .sort((a, b) => a[1].delta - b[1].delta)
                               .slice(0, 8)
                               .map(([client, detail]) => {
                                 const isRed = detail.forecast > 0 && detail.real < detail.forecast;
@@ -243,7 +246,7 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-destructive/50" /><span className="text-[9px] text-muted-foreground">&lt;70%</span></div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-warning/50" /><span className="text-[9px] text-muted-foreground">70–95%</span></div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-success/50" /><span className="text-[9px] text-muted-foreground">≥95%</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-muted/20" /><span className="text-[9px] text-muted-foreground">Sin forecast</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-muted/15 border border-border/30" /><span className="text-[9px] text-muted-foreground">Sin datos</span></div>
       </div>
     </div>
   );
