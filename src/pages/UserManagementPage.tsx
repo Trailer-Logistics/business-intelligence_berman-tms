@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
-import { Eye, EyeOff, UserPlus, Shield, Users } from "lucide-react";
-import type { Database } from "@/integrations/supabase/types";
+import { Eye, EyeOff, UserPlus, Shield, Users, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
-type AppRole = Database["public"]["Enums"]["app_role"];
+type AppRole = "admin" | "operador" | "viewer";
 
 interface UserRow {
   id: string;
@@ -17,7 +17,7 @@ interface UserRow {
   email: string;
   rol: AppRole;
   activo: boolean;
-  created_at: string;
+  creado_at: string;
 }
 
 export default function UserManagementPage() {
@@ -36,8 +36,8 @@ export default function UserManagementPage() {
     setLoadingUsers(true);
     const { data, error } = await supabase
       .from("config_usuarios")
-      .select("id, nombre, email, rol, activo, created_at")
-      .order("created_at", { ascending: false });
+      .select("id, nombre, email, rol, activo, creado_at")
+      .order("creado_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching users:", error);
@@ -62,7 +62,6 @@ export default function UserManagementPage() {
     setLoading(true);
 
     try {
-      // Create auth user via edge function
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
@@ -110,52 +109,62 @@ export default function UserManagementPage() {
       case "admin": return "Admin";
       case "operador": return "Operador";
       case "viewer": return "Visualizador";
+      default: return rol || "—";
     }
   };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Shield className="w-6 h-6 text-primary" />
-          Gestión de Usuarios
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="flex items-center gap-2 mb-1">
+          <Shield className="w-4 h-4 text-[hsl(191,100%,50%)]" strokeWidth={1.8} />
+          <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-[0.15em]">User Management</span>
+        </div>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          Gestion de <span className="text-[hsl(191,100%,50%)]">Usuarios</span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Crear y administrar usuarios de la plataforma</p>
-      </div>
+        <p className="text-sm text-muted-foreground mt-0.5">Crear y administrar usuarios de la plataforma</p>
+      </motion.div>
 
       {/* Form */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-6">
-          <UserPlus className="w-5 h-5 text-primary" />
-          CREAR USUARIO
-        </h2>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-xl border border-[hsl(222,25%,15%)] p-6"
+        style={{ background: "linear-gradient(145deg, hsl(222 40% 9%), hsl(222 40% 10.5%))" }}
+      >
+        <div className="flex items-center gap-2.5 mb-6">
+          <div className="p-2 rounded-xl bg-[hsl(191,100%,50%,0.1)]">
+            <UserPlus className="w-4 h-4 text-[hsl(191,100%,50%)]" strokeWidth={1.8} />
+          </div>
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Crear Usuario</h2>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Row 1 */}
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre</Label>
-              <Input id="nombre" placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="nombre" className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Nombre</Label>
+              <Input id="nombre" placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} className="rounded-xl bg-[hsl(222,30%,11%)] border-[hsl(222,25%,18%)] focus:border-[hsl(191,100%,50%,0.5)]" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="apellido">Apellido</Label>
-              <Input id="apellido" placeholder="Apellido" value={apellido} onChange={e => setApellido(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="apellido" className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Apellido</Label>
+              <Input id="apellido" placeholder="Apellido" value={apellido} onChange={e => setApellido(e.target.value)} className="rounded-xl bg-[hsl(222,30%,11%)] border-[hsl(222,25%,18%)] focus:border-[hsl(191,100%,50%,0.5)]" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="correo@empresa.cl" value={email} onChange={e => setEmail(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Email</Label>
+              <Input id="email" type="email" placeholder="correo@empresa.cl" value={email} onChange={e => setEmail(e.target.value)} className="rounded-xl bg-[hsl(222,30%,11%)] border-[hsl(222,25%,18%)] focus:border-[hsl(191,100%,50%,0.5)]" />
             </div>
           </div>
 
-          {/* Row 2 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="usuario">Usuario</Label>
-              <Input id="usuario" placeholder="Nombre de usuario" value={usuario} onChange={e => setUsuario(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label htmlFor="usuario" className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Usuario</Label>
+              <Input id="usuario" placeholder="Nombre de usuario" value={usuario} onChange={e => setUsuario(e.target.value)} className="rounded-xl bg-[hsl(222,30%,11%)] border-[hsl(222,25%,18%)] focus:border-[hsl(191,100%,50%,0.5)]" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="clave">Clave</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="clave" className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Clave</Label>
               <div className="relative">
                 <Input
                   id="clave"
@@ -163,6 +172,7 @@ export default function UserManagementPage() {
                   placeholder="••••••••"
                   value={clave}
                   onChange={e => setClave(e.target.value)}
+                  className="rounded-xl bg-[hsl(222,30%,11%)] border-[hsl(222,25%,18%)] focus:border-[hsl(191,100%,50%,0.5)] pr-10"
                 />
                 <button
                   type="button"
@@ -173,82 +183,117 @@ export default function UserManagementPage() {
                 </button>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Tipo Usuario</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Tipo Usuario</Label>
               <Select value={tipoUsuario} onValueChange={v => setTipoUsuario(v as AppRole)}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl bg-[hsl(222,30%,11%)] border-[hsl(222,25%,18%)]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="operador">Operador</SelectItem>
                   <SelectItem value="viewer">Visualizador</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={loading} className="min-w-[160px]">
-              {loading ? "Creando..." : "Guardar Usuario"}
+          <div className="flex justify-end pt-2">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="min-w-[160px] rounded-xl font-semibold"
+              style={{ background: "linear-gradient(135deg, hsl(191 100% 50%), hsl(191 80% 45%))", color: "hsl(222 47% 6%)" }}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Creando...</span>
+              ) : "Guardar Usuario"}
             </Button>
           </div>
         </form>
-      </div>
+      </motion.div>
 
       {/* Users Table */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-          <Users className="w-5 h-5 text-primary" />
-          Usuarios Registrados
-        </h2>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="rounded-xl border border-[hsl(222,25%,15%)] p-6"
+        style={{ background: "linear-gradient(145deg, hsl(222 40% 9%), hsl(222 40% 10.5%))" }}
+      >
+        <div className="flex items-center gap-2.5 mb-5">
+          <div className="p-2 rounded-xl bg-[hsl(258,90%,66%,0.1)]">
+            <Users className="w-4 h-4 text-[hsl(258,90%,66%)]" strokeWidth={1.8} />
+          </div>
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Usuarios Registrados</h2>
+          <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md ml-auto">
+            {users.length} total
+          </span>
+        </div>
 
         {loadingUsers ? (
-          <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 rounded-full border-2 border-[hsl(191,100%,50%,0.2)] border-t-[hsl(191,100%,50%)] animate-spin" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha Creación</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No hay usuarios registrados
-                  </TableCell>
+          <div className="overflow-x-auto rounded-lg border border-[hsl(222,25%,13%)]">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-[hsl(222,25%,13%)] hover:bg-transparent">
+                  <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Nombre</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Email</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Rol</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Estado</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Fecha</TableHead>
                 </TableRow>
-              ) : (
-                users.map(u => (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.nombre || "—"}</TableCell>
-                    <TableCell>{u.email}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${u.rol === "admin" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-                        {rolLabel(u.rol)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded text-xs ${u.activo ? "bg-emerald-500/20 text-emerald-400" : "bg-destructive/20 text-destructive"}`}>
-                        {u.activo ? "Activo" : "Inactivo"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(u.created_at).toLocaleDateString("es-CL")}
+              </TableHeader>
+              <TableBody>
+                {users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                      No hay usuarios registrados
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  users.map(u => (
+                    <TableRow key={u.id} className="border-b border-[hsl(222,25%,11%)] hover:bg-[hsl(222,30%,11%)] transition-colors">
+                      <TableCell className="font-medium text-sm">{u.nombre || "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground font-mono">{u.email}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${
+                          u.rol === "admin"
+                            ? "bg-[hsl(191,100%,50%,0.1)] text-[hsl(191,100%,50%)]"
+                            : u.rol === "operador"
+                            ? "bg-[hsl(258,90%,66%,0.1)] text-[hsl(258,90%,66%)]"
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            u.rol === "admin" ? "bg-[hsl(191,100%,50%)]" : u.rol === "operador" ? "bg-[hsl(258,90%,66%)]" : "bg-muted-foreground"
+                          }`} />
+                          {rolLabel(u.rol)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium ${
+                          u.activo
+                            ? "bg-[hsl(152,69%,45%,0.1)] text-[hsl(152,69%,45%)]"
+                            : "bg-destructive/10 text-destructive"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${u.activo ? "bg-[hsl(152,69%,45%)]" : "bg-destructive"}`} />
+                          {u.activo ? "Activo" : "Inactivo"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs font-mono">
+                        {new Date(u.creado_at).toLocaleDateString("es-CL")}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

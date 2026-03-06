@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
 } from "recharts";
+import { TrendingUp } from "lucide-react";
 
 interface Viaje {
   fecha_salida_origen?: string;
@@ -23,12 +24,13 @@ const formatCLP = (n: number) => {
 };
 
 const tooltipStyle: React.CSSProperties = {
-  background: "hsl(220, 25%, 10%)",
-  border: "1px solid hsl(220, 20%, 18%)",
-  borderRadius: "8px",
-  color: "hsl(200, 20%, 90%)",
+  background: "hsl(222, 40%, 8%)",
+  border: "1px solid hsl(222, 25%, 18%)",
+  borderRadius: "12px",
+  color: "hsl(210, 20%, 93%)",
   fontSize: "12px",
-  padding: "8px 12px",
+  padding: "10px 14px",
+  boxShadow: "0 8px 32px hsl(222, 47%, 6%, 0.5)",
 };
 
 const WaterfallTrendChart = ({ viajes }: Props) => {
@@ -36,7 +38,6 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
   const [granularity, setGranularity] = useState<Granularity>("day");
 
   const waterfallData = useMemo(() => {
-    // Aggregate by granularity
     const map: Record<string, number> = {};
     for (const v of viajes) {
       if (!v.fecha_salida_origen) continue;
@@ -55,11 +56,9 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
     const sorted = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
     if (sorted.length === 0) return [];
 
-    // Take last N entries based on granularity
     const maxItems = granularity === "day" ? 30 : granularity === "month" ? 12 : 10;
     const sliced = sorted.slice(-maxItems);
 
-    // Build waterfall: each bar shows the delta from previous period
     const result: { name: string; value: number; realValue: number; start: number; end: number; isPositive: boolean; pct: number }[] = [];
     let cumulative = 0;
 
@@ -94,30 +93,39 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
     const d = payload[0]?.payload;
     const deltaLabel = metric === "venta" ? formatCLP(d?.value || 0) : d?.value?.toLocaleString("es-CL");
     const realLabel = metric === "venta" ? formatCLP(d?.realValue || 0) : d?.realValue?.toLocaleString("es-CL");
-    const pctLabel = d?.pct !== undefined ? `${d.pct >= 0 ? "+" : ""}${d.pct.toFixed(1)}%` : "—";
-    const deltaColor = d?.isPositive ? "hsl(145, 65%, 45%)" : "hsl(0, 80%, 55%)";
+    const pctLabel = d?.pct !== undefined ? `${d.pct >= 0 ? "+" : ""}${d.pct.toFixed(1)}%` : "--";
+    const deltaColor = d?.isPositive ? "hsl(152, 69%, 45%)" : "hsl(0, 72%, 51%)";
     return (
       <div style={tooltipStyle}>
-        <p style={{ fontWeight: 600, marginBottom: 4 }}>{label}</p>
-        <p>Valor real: <span style={{ color: "hsl(185, 80%, 55%)" }}>{realLabel}</span></p>
-        <p>
-          Δ {metric === "venta" ? "$" : "Cant."}: <span style={{ color: deltaColor }}>{deltaLabel}</span>
-        </p>
-        <p>Variación %: <span style={{ color: deltaColor }}>{pctLabel}</span></p>
+        <p className="font-semibold mb-2">{label}</p>
+        <div className="space-y-1">
+          <p className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[hsl(191,100%,50%)]" />
+            Real: <span className="font-mono font-semibold text-[hsl(191,100%,50%)]">{realLabel}</span>
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full" style={{ background: deltaColor }} />
+            Delta: <span className="font-mono font-semibold" style={{ color: deltaColor }}>{deltaLabel}</span>
+          </p>
+          <p className="text-muted-foreground">
+            Variacion: <span className="font-mono" style={{ color: deltaColor }}>{pctLabel}</span>
+          </p>
+        </div>
       </div>
     );
   };
 
-  const btnBase = "px-3 py-1 text-[11px] font-medium rounded-md transition-all duration-200";
-  const btnActive = "bg-primary/20 text-primary border border-primary/30";
-  const btnInactive = "text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent";
+  const btnBase = "px-3 py-1.5 text-[11px] font-medium rounded-lg transition-all duration-200";
+  const btnActive = "bg-[hsl(191,100%,50%,0.12)] text-[hsl(191,100%,50%)] border border-[hsl(191,100%,50%,0.25)]";
+  const btnInactive = "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent";
 
   return (
-    <div className="card-executive p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-xl border border-[hsl(222,25%,15%)] p-5" style={{ background: "linear-gradient(145deg, hsl(222 40% 9%), hsl(222 40% 10.5%))" }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-foreground whitespace-nowrap">Tendencia de Viajes</h3>
-          <div className="flex gap-1">
+          <TrendingUp className="w-4 h-4 text-[hsl(152,69%,45%)]" strokeWidth={1.8} />
+          <h3 className="text-sm font-semibold text-foreground">Tendencia Waterfall</h3>
+          <div className="flex gap-1 ml-2">
             <button className={`${btnBase} ${metric === "viajes" ? btnActive : btnInactive}`} onClick={() => setMetric("viajes")}>
               Viajes
             </button>
@@ -133,33 +141,57 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
               className={`${btnBase} ${granularity === g ? btnActive : btnInactive}`}
               onClick={() => setGranularity(g)}
             >
-              {g === "year" ? "Año" : g === "month" ? "Mes" : "Día"}
+              {g === "year" ? "Ano" : g === "month" ? "Mes" : "Dia"}
             </button>
           ))}
         </div>
       </div>
 
       {waterfallData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={260}>
           <BarChart data={waterfallData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
-            <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={10} angle={granularity === "day" ? -30 : 0} textAnchor={granularity === "day" ? "end" : "middle"} height={granularity === "day" ? 50 : 30} />
-            <YAxis stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => (metric === "venta" ? formatCLP(v) : v)} />
+            <defs>
+              <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(152, 69%, 45%)" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="hsl(152, 69%, 45%)" stopOpacity={0.5} />
+              </linearGradient>
+              <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(0, 72%, 51%)" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="hsl(0, 72%, 51%)" stopOpacity={0.5} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 25%, 14%)" vertical={false} />
+            <XAxis
+              dataKey="name"
+              stroke="hsl(215, 15%, 40%)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+              angle={granularity === "day" ? -30 : 0}
+              textAnchor={granularity === "day" ? "end" : "middle"}
+              height={granularity === "day" ? 50 : 30}
+            />
+            <YAxis
+              stroke="hsl(215, 15%, 35%)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => (metric === "venta" ? formatCLP(v) : v)}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={0} stroke="hsl(220, 20%, 25%)" />
-            <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+            <ReferenceLine y={0} stroke="hsl(222, 25%, 20%)" strokeDasharray="3 3" />
+            <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={20}>
               {waterfallData.map((entry, i) => (
                 <Cell
                   key={i}
-                  fill={entry.isPositive ? "hsl(145, 65%, 45%)" : "hsl(0, 80%, 55%)"}
-                  fillOpacity={0.85}
+                  fill={entry.isPositive ? "url(#greenGrad)" : "url(#redGrad)"}
                 />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       ) : (
-        <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>
+        <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">Sin datos</div>
       )}
     </div>
   );

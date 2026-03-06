@@ -16,34 +16,46 @@ export type Database = {
     Tables: {
       config_usuarios: {
         Row: {
-          activo: boolean
-          created_at: string
-          email: string
           id: string
-          nombre: string
-          rol: Database["public"]["Enums"]["app_role"]
-          updated_at: string
-          user_id: string
+          nombre: string | null
+          apellido: string | null
+          email: string | null
+          usuario_login: string | null
+          clave: string | null
+          tipo_usuario: string | null
+          creado_at: string
+          user_id: string | null
+          rol: string | null
+          activo: boolean | null
+          updated_at: string | null
         }
         Insert: {
-          activo?: boolean
-          created_at?: string
-          email: string
           id?: string
-          nombre?: string
-          rol?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id: string
+          nombre?: string | null
+          apellido?: string | null
+          email?: string | null
+          usuario_login?: string | null
+          clave?: string | null
+          tipo_usuario?: string | null
+          creado_at?: string
+          user_id?: string | null
+          rol?: string | null
+          activo?: boolean | null
+          updated_at?: string | null
         }
         Update: {
-          activo?: boolean
-          created_at?: string
-          email?: string
           id?: string
-          nombre?: string
-          rol?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id?: string
+          nombre?: string | null
+          apellido?: string | null
+          email?: string | null
+          usuario_login?: string | null
+          clave?: string | null
+          tipo_usuario?: string | null
+          creado_at?: string
+          user_id?: string | null
+          rol?: string | null
+          activo?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -150,7 +162,7 @@ export type Database = {
     Functions: {
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: string
           _user_id: string
         }
         Returns: boolean

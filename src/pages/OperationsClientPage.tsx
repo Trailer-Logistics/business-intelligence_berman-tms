@@ -3,28 +3,38 @@ import { useParams } from "react-router-dom";
 import { useViajes } from "@/hooks/useViajes";
 import KpiCard from "@/components/KpiCard";
 import GlobalFiltersPanel from "@/components/GlobalFiltersPanel";
-import { Truck, Clock, Route, DollarSign, Loader2, Banknote } from "lucide-react";
+import { Truck, Clock, Route, DollarSign, Banknote, Factory, PieChart as PieIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const PIE_COLORS = [
-  "hsl(185, 100%, 50%)", "hsl(145, 65%, 45%)", "hsl(40, 95%, 55%)",
-  "hsl(220, 90%, 55%)", "hsl(270, 70%, 60%)", "hsl(0, 80%, 55%)",
+const CHART_COLORS = [
+  "hsl(191, 100%, 50%)", "hsl(152, 69%, 45%)", "hsl(38, 92%, 50%)",
+  "hsl(217, 91%, 60%)", "hsl(258, 90%, 66%)", "hsl(340, 82%, 52%)",
 ];
+
+const tooltipStyle: React.CSSProperties = {
+  background: "hsl(222, 40%, 8%)",
+  border: "1px solid hsl(222, 25%, 18%)",
+  borderRadius: "12px",
+  color: "hsl(210, 20%, 93%)",
+  fontSize: "12px",
+  padding: "10px 14px",
+  boxShadow: "0 8px 32px hsl(222, 47%, 6%, 0.5)",
+};
 
 const SLUG_TO_CLIENT: Record<string, string> = {
   "walmart-loa": "Walmart LOA",
-  "walmart-penon": "Walmart Peñon",
+  "walmart-penon": "Walmart Penon",
   "blue-express": "Blue Express",
   "ideal-sa": "Ideal S.a.",
   "smu": "SMU",
   "samex": "Samex",
   "cencosud": "Cencosud",
   "ccu": "CCU",
-  "nestlé": "Nestlé",
-  "nestle": "Nestlé",
+  "nestle": "Nestle",
   "soprole": "Soprole",
   "codelpa": "Codelpa",
   "otros-clientes": "Otros Clientes",
@@ -92,120 +102,142 @@ export default function OperationsClientPage() {
     if (!active || !payload?.length) return null;
     const item = payload[0];
     return (
-      <div style={{
-        background: "hsl(220, 25%, 10%)",
-        border: "1px solid hsl(220, 20%, 18%)",
-        borderRadius: "8px",
-        padding: "8px 12px",
-        fontSize: "12px",
-      }}>
-        <p style={{ color: "#fff", fontWeight: 600, marginBottom: 2 }}>{item.name}</p>
-        <p style={{ color: "#fff" }}>{item.value} viajes — <span style={{ color: item.payload.fill || "hsl(185, 100%, 50%)" }}>{item.payload.pct}%</span></p>
+      <div style={tooltipStyle}>
+        <p className="font-semibold text-white mb-1">{item.name}</p>
+        <p className="text-white/80">
+          {item.value} viajes — <span style={{ color: item.payload.fill || "hsl(191, 100%, 50%)" }}>{item.payload.pct}%</span>
+        </p>
       </div>
     );
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Operaciones: <span className="text-primary">{clientName}</span></h1>
-          <p className="text-sm text-muted-foreground">Panel de control operacional — filtrado por <span className="text-primary font-medium">cliente_estandar</span></p>
+    <div className="space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="flex items-center gap-2 mb-1">
+          <Factory className="w-4 h-4 text-[hsl(191,100%,50%)]" strokeWidth={1.8} />
+          <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-[0.15em]">Operations</span>
         </div>
-      </div>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          {clientName === "Otros Clientes" ? "Otros " : ""}
+          <span className="text-[hsl(191,100%,50%)]">{clientName === "Otros Clientes" ? "Clientes" : clientName}</span>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Panel de control operacional</p>
+      </motion.div>
 
       <GlobalFiltersPanel />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <span className="ml-3 text-muted-foreground text-sm">Cargando datos…</span>
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <div className="w-12 h-12 rounded-full border-2 border-[hsl(191,100%,50%,0.2)] border-t-[hsl(191,100%,50%)] animate-spin" />
+          <span className="text-sm text-muted-foreground">Cargando datos...</span>
         </div>
       ) : (
         <>
-          {/* 5 KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <KpiCard title="Total Viajes" value={formatNumber(kpis.total)} icon={<Truck className="w-5 h-5" />} subtitle="Período seleccionado" />
-            <KpiCard title="Venta Total" value={formatCLP(kpis.ventaTotal)} icon={<Banknote className="w-5 h-5" />} subtitle="Ingresos acumulados" />
-            <KpiCard
-              title="Puntualidad (OTD)"
-              value={`${kpis.otd}%`}
-              trend={kpis.otd >= 80 ? "up" : kpis.otd >= 60 ? "neutral" : "down"}
-              change={kpis.otd >= 80 ? "Óptimo" : kpis.otd >= 60 ? "Aceptable" : "Crítico"}
-              icon={<Clock className="w-5 h-5" />}
-              subtitle="GPS ≤ Planificado en origen"
-            />
-            <KpiCard title="Km Recorridos" value={formatNumber(kpis.km)} icon={<Route className="w-5 h-5" />} subtitle="Total acumulado" />
-            <KpiCard title="Tarifa Promedio" value={formatCLP(kpis.tarifaPromedio)} icon={<DollarSign className="w-5 h-5" />} subtitle="Venta por viaje" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <KpiCard title="Total Viajes" value={formatNumber(kpis.total)} icon={<Truck className="w-5 h-5" strokeWidth={1.8} />} subtitle="Periodo seleccionado" accentColor="191 100% 50%" index={0} />
+            <KpiCard title="Venta Total" value={formatCLP(kpis.ventaTotal)} icon={<Banknote className="w-5 h-5" strokeWidth={1.8} />} subtitle="Ingresos acumulados" accentColor="152 69% 45%" index={1} />
+            <KpiCard title="OTD" value={`${kpis.otd}%`} trend={kpis.otd >= 80 ? "up" : kpis.otd >= 60 ? "neutral" : "down"} change={kpis.otd >= 80 ? "Optimo" : kpis.otd >= 60 ? "Aceptable" : "Critico"} icon={<Clock className="w-5 h-5" strokeWidth={1.8} />} subtitle="Puntualidad" accentColor="38 92% 50%" index={2} />
+            <KpiCard title="Km Recorridos" value={formatNumber(kpis.km)} icon={<Route className="w-5 h-5" strokeWidth={1.8} />} subtitle="Total acumulado" accentColor="217 91% 60%" index={3} />
+            <KpiCard title="Tarifa Promedio" value={formatCLP(kpis.tarifaPromedio)} icon={<DollarSign className="w-5 h-5" strokeWidth={1.8} />} subtitle="Venta por viaje" accentColor="258 90% 66%" index={4} />
           </div>
 
-          {/* Estado de Viajes */}
-          <div className="card-executive p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-1">Estado de Viajes</h3>
-            <p className="text-xs text-muted-foreground mb-4">Distribución (sin Planificado)</p>
-            {estadoPie.length > 0 ? (
-              <div className="flex flex-col lg:flex-row items-center gap-6">
-                <ResponsiveContainer width="100%" height={220} className="max-w-xs">
-                  <PieChart>
-                    <Pie data={estadoPie} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
-                      {estadoPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip content={<PieTooltipContent />} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="grid grid-cols-2 gap-2">
-                  {estadoPie.map((item, i) => (
-                    <div key={item.name} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                      <span className="text-[10px] text-muted-foreground truncate">{item.name}: {item.value} ({item.pct}%)</span>
-                    </div>
-                  ))}
-                </div>
+          {/* Estado + Table */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="rounded-xl border border-[hsl(222,25%,15%)] p-5"
+              style={{ background: "linear-gradient(145deg, hsl(222 40% 9%), hsl(222 40% 10.5%))" }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <PieIcon className="w-4 h-4 text-[hsl(258,90%,66%)]" strokeWidth={1.8} />
+                <h3 className="text-sm font-semibold text-foreground">Estado de Viajes</h3>
               </div>
-            ) : <p className="text-sm text-muted-foreground text-center py-10">Sin datos</p>}
-          </div>
+              <p className="text-[11px] text-muted-foreground mb-4">Sin Planificado</p>
+              {estadoPie.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie data={estadoPie} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0}>
+                        {estadoPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip content={<PieTooltipContent />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    {estadoPie.map((item, i) => (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length], boxShadow: `0 0 6px ${CHART_COLORS[i % CHART_COLORS.length]}40` }} />
+                        <span className="text-[10px] text-muted-foreground truncate">{item.name}: <span className="font-mono text-foreground/80">{item.pct}%</span></span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">Sin datos</div>}
+            </motion.div>
 
-          {/* Recent trips table */}
-          <div className="card-executive p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Últimos Viajes</h3>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Nro Viaje</TableHead>
-                    <TableHead className="text-xs">Guía</TableHead>
-                    <TableHead className="text-xs">Estado</TableHead>
-                    <TableHead className="text-xs">Tracto</TableHead>
-                    <TableHead className="text-xs">Conductor</TableHead>
-                    <TableHead className="text-xs">Km</TableHead>
-                    <TableHead className="text-xs">Tarifa</TableHead>
-                    <TableHead className="text-xs">POD</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientViajes.slice(0, 20).map((v) => (
-                    <TableRow key={v.viaje_id}>
-                      <TableCell className="text-xs font-mono">{v.nro_viaje}</TableCell>
-                      <TableCell className="text-xs">{v.nro_guia || "—"}</TableCell>
-                      <TableCell>
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${v.terminado === "Sí" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>
-                          {v.estado_viaje_estandar}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs font-mono">{v.patente_tracto}</TableCell>
-                      <TableCell className="text-xs">{v.conductor_principal || "—"}</TableCell>
-                      <TableCell className="text-xs">{v.km_recorridos}</TableCell>
-                      <TableCell className="text-xs">${(v.tarifa_venta || 0).toLocaleString("es-CL")}</TableCell>
-                      <TableCell>
-                        <span className={`text-[10px] px-2 py-0.5 rounded ${v.estado_pod_detalle === "Validado" ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"}`}>
-                          {v.estado_pod_detalle}
-                        </span>
-                      </TableCell>
+            {/* Trips table */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="lg:col-span-2 rounded-xl border border-[hsl(222,25%,15%)] p-5"
+              style={{ background: "linear-gradient(145deg, hsl(222 40% 9%), hsl(222 40% 10.5%))" }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Ultimos Viajes</h3>
+                <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{clientViajes.length} total</span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-[hsl(222,25%,13%)]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-[hsl(222,25%,13%)] hover:bg-transparent">
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Viaje</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Estado</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Tracto</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Conductor</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Km</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">Tarifa</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">POD</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {clientViajes.length === 0 ? (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-12">Sin viajes</TableCell></TableRow>
+                    ) : clientViajes.slice(0, 20).map((v) => (
+                      <TableRow key={v.viaje_id} className="border-b border-[hsl(222,25%,11%)] hover:bg-[hsl(222,30%,11%)] transition-colors">
+                        <TableCell className="text-xs font-mono text-[hsl(191,100%,50%)]">{v.nro_viaje}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-lg font-medium ${
+                            v.terminado === "Si"
+                              ? "bg-[hsl(152,69%,45%,0.1)] text-[hsl(152,69%,45%)]"
+                              : "bg-[hsl(38,92%,50%,0.1)] text-[hsl(38,92%,50%)]"
+                          }`}>
+                            <span className={`w-1 h-1 rounded-full ${v.terminado === "Si" ? "bg-[hsl(152,69%,45%)]" : "bg-[hsl(38,92%,50%)]"}`} />
+                            {v.estado_viaje_estandar}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">{v.patente_tracto}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{v.conductor_principal || "—"}</TableCell>
+                        <TableCell className="text-xs font-mono">{v.km_recorridos}</TableCell>
+                        <TableCell className="text-xs font-mono">${(v.tarifa_venta || 0).toLocaleString("es-CL")}</TableCell>
+                        <TableCell>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-lg ${
+                            v.estado_pod_detalle === "Validado"
+                              ? "bg-[hsl(152,69%,45%,0.1)] text-[hsl(152,69%,45%)]"
+                              : "bg-muted text-muted-foreground"
+                          }`}>
+                            {v.estado_pod_detalle}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </motion.div>
           </div>
         </>
       )}
