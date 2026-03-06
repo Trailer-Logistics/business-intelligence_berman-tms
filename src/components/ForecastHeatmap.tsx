@@ -94,9 +94,10 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
       dailyMap[d][c] = (dailyMap[d][c] || 0) + (v.tarifa_venta || 0);
     }
 
-    const fromDate = new Date(filters.dateFrom);
-    const year = fromDate.getFullYear();
-    const month = fromDate.getMonth();
+    // Parse dateFrom string directly to avoid UTC timezone shift
+    const [yearStr, monthStr] = filters.dateFrom.split("-");
+    const year = Number(yearStr);
+    const month = Number(monthStr) - 1; // JS months are 0-indexed
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const cells: DayCell[] = [];
