@@ -28,16 +28,31 @@ export function useExternalData<T = any>({
   return useQuery<T[]>({
     queryKey: ["external", view, JSON.stringify(filters), limit, offset],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("external-query", {
-        body: { view, filters, limit, offset },
-      });
+      let query = supabase.from(view).select("*");
+
+      // Apply filters
+      if (filters) {
+        for (const [key, condition] of Object.entries(filters)) {
+          const col = key.includes("@") ? key.split("@")[0] : key;
+          if (condition && typeof condition === "object" && "op" in condition) {
+            const { op, value } = condition as FilterCondition;
+            query = query.filter(col, op, value);
+          } else {
+            query = query.eq(col, condition as string | number);
+          }
+        }
+      }
+
+      if (limit) query = query.limit(limit);
+      if (offset) query = query.range(offset, offset + (limit || 1000) - 1);
+
+      const { data, error } = await query;
 
       if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-      return data.data as T[];
+      return (data || []) as T[];
     },
     enabled,
-    staleTime: 10 * 1000, // 10s cache for responsive filters
+    staleTime: 10 * 1000,
     refetchOnWindowFocus: false,
   });
 }
