@@ -3,20 +3,20 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "react-router-dom";
-import { LogOut, Bell, User, Activity } from "lucide-react";
+import { LogOut, Bell, Activity } from "lucide-react";
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 const ROUTE_TITLES: Record<string, string> = {
-  "/": "Dashboard General",
+  "/": "Dashboard",
   "/forecasting": "Inteligencia Predictiva",
-  "/activos/flota": "Utilizacion de Flota",
-  "/activos/conductores": "Ranking Conductores",
-  "/registro/walmart-loa": "Registro Walmart LOA",
-  "/registro/forecast": "Forecast Contractual",
-  "/usuarios": "Gestion de Usuarios",
+  "/activos/flota": "Flota",
+  "/activos/conductores": "Conductores",
+  "/registro/walmart-loa": "Walmart LOA",
+  "/registro/forecast": "Forecast",
+  "/usuarios": "Usuarios",
 };
 
 const MainLayout = ({ children }: MainLayoutProps) => {
@@ -25,7 +25,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   const currentTitle = ROUTE_TITLES[location.pathname]
     || (location.pathname.startsWith("/operaciones/")
-      ? `Operaciones — ${location.pathname.split("/").pop()?.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`
+      ? location.pathname.split("/").pop()?.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
       : "");
 
   const userInitial = user?.email?.charAt(0).toUpperCase() || "U";
@@ -34,64 +34,55 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 bg-mesh-animated">
           {/* Glass header */}
-          <header className="h-14 flex items-center justify-between px-5 sticky top-0 z-20 glass border-b border-[hsl(222,25%,13%)]">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="text-muted-foreground hover:text-[hsl(191,100%,50%)] transition-colors" />
-              <div className="hidden sm:flex items-center gap-3">
-                <div className="w-px h-5 bg-border" />
-                <div className="flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5 text-[hsl(152,69%,45%)]" />
-                  <span className="text-xs text-muted-foreground font-mono tracking-wider">
-                    {currentTitle.toUpperCase()}
-                  </span>
-                </div>
+          <header className="h-12 flex items-center justify-between px-5 sticky top-0 z-20 glass">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="text-muted-foreground/60 hover:text-[hsl(191,100%,50%)] transition-colors" />
+              <div className="hidden sm:flex items-center gap-2.5">
+                <div className="w-px h-4 bg-[hsl(222,25%,14%)]" />
+                <Activity className="w-3 h-3 text-[hsl(152,69%,45%)]" />
+                <span className="text-[10px] text-muted-foreground/50 font-mono tracking-[0.15em] uppercase">
+                  {currentTitle}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Notifications */}
-              <button className="relative p-2 rounded-xl hover:bg-secondary transition-all duration-200 text-muted-foreground hover:text-[hsl(191,100%,50%)] group">
-                <Bell className="w-4 h-4" strokeWidth={1.8} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[hsl(191,100%,50%)] opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-1.5">
+              <button className="relative p-2 rounded-xl hover:bg-[hsl(222,30%,11%)] transition-all text-muted-foreground/50 hover:text-[hsl(191,100%,50%)]">
+                <Bell className="w-3.5 h-3.5" strokeWidth={1.8} />
               </button>
 
-              <div className="w-px h-5 bg-border hidden sm:block" />
+              <div className="w-px h-4 bg-[hsl(222,25%,14%)] mx-1 hidden sm:block" />
 
-              {/* User */}
-              <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-secondary/50 transition-colors">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+              <div className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-[hsl(222,30%,11%)] transition-colors cursor-default">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold"
                   style={{
-                    background: "linear-gradient(135deg, hsl(191 100% 50% / 0.2), hsl(258 90% 66% / 0.15))",
+                    background: "linear-gradient(135deg, hsl(191 100% 50% / 0.25), hsl(258 90% 66% / 0.15))",
                     color: "hsl(191 100% 50%)",
-                    border: "1px solid hsl(191 100% 50% / 0.15)",
+                    boxShadow: "0 0 12px hsl(191 100% 50% / 0.15)",
                   }}
                 >
                   {userInitial}
                 </div>
-                <span className="text-xs text-muted-foreground hidden md:inline max-w-[140px] truncate">
+                <span className="text-[11px] text-muted-foreground/60 hidden md:inline max-w-[130px] truncate font-mono">
                   {user?.email}
                 </span>
               </div>
 
-              {/* Logout */}
               <button
                 onClick={signOut}
-                className="p-2 rounded-xl hover:bg-destructive/10 transition-all duration-200 text-muted-foreground hover:text-destructive"
+                className="p-2 rounded-xl hover:bg-[hsl(0,72%,51%,0.08)] transition-all text-muted-foreground/40 hover:text-[hsl(0,72%,51%)]"
                 title="Cerrar sesion"
               >
-                <LogOut className="w-4 h-4" strokeWidth={1.8} />
+                <LogOut className="w-3.5 h-3.5" strokeWidth={1.8} />
               </button>
             </div>
           </header>
 
-          {/* Main content */}
-          <main className="flex-1 p-5 md:p-7 overflow-auto relative">
-            <div className="absolute inset-0 gradient-mesh opacity-50 pointer-events-none" />
-            <div className="relative z-10">
-              {children}
-            </div>
+          {/* Content */}
+          <main className="flex-1 p-5 md:p-7 overflow-auto relative z-10">
+            {children}
           </main>
         </div>
       </div>
