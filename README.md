@@ -111,6 +111,81 @@ npx supabase db push
 | `20260307190000` | pg_cron job para sync automatico cada 15 min |
 | `20260307200000` | Documentacion de tablas y columnas (COMMENT ON) |
 
+## Design System
+
+### Tema visual
+
+Dark mode con acentos cyan/electricos. Modelo de color HSL via CSS custom properties en `src/index.css`.
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--background` | `hsl(222 47% 5%)` | Fondo principal (azul-gris muy oscuro) |
+| `--foreground` | `hsl(210 40% 96%)` | Texto principal (casi blanco) |
+| `--primary` | `hsl(191 100% 50%)` | Color de accion principal (cyan) |
+| `--card` | `hsl(222 40% 8%)` | Superficie de cards |
+| `--secondary` | `hsl(222 30% 12%)` | Elementos secundarios |
+| `--destructive` | `hsl(0 72% 51%)` | Acciones destructivas (rojo) |
+| `--muted` | `hsl(222 25% 11%)` | Texto/fondo atenuado |
+| `--border` | `hsl(222 25% 14%)` | Bordes |
+
+**Paleta extendida:**
+- Cyan: `hsl(191 100% 50%)` — acento principal
+- Violet: `hsl(258 90% 66%)` — acento secundario
+- Emerald: `hsl(152 69% 45%)` — exito/success
+- Amber: `hsl(38 92% 50%)` — warning
+- Rose: `hsl(340 82% 52%)` — error/alerta
+
+### Tipografia
+
+| Familia | Uso | Pesos |
+|---------|-----|-------|
+| **Montserrat** | Headings (h1-h6), display | 300–900 |
+| **Inter** | Body text, UI general | 300–700 |
+| **JetBrains Mono** | Codigo, numeros, KPIs | 400–700 |
+
+Configuradas en `tailwind.config.ts` como `font-sans` (Inter), `font-display` (Montserrat) y `font-mono` (JetBrains Mono).
+
+### Efectos visuales
+
+| Clase CSS | Efecto |
+|-----------|--------|
+| `.glass` | Glassmorphism — backdrop-blur 24px con saturacion |
+| `.card-glow` | Hover glow cyan con elevacion (-3px translateY) |
+| `.card-hero` | Card grande con gradiente y linea de luz superior |
+| `.gradient-border` | Borde gradiente estatico (cyan a violet) |
+| `.gradient-border-animated` | Borde gradiente rotando (4s) |
+| `.bg-mesh-animated` | Fondo de malla con gradientes radiales en movimiento (20s) |
+| `.text-glow-cyan` | Text-shadow con glow cyan |
+| `.glow-cyan` | Box-shadow glow cyan al 12% opacidad |
+| `.dot-grid` | Patron de puntos sutil para fondos |
+
+### Animaciones
+
+- `fade-up` / `fade-in` — Transiciones de entrada suaves
+- `float` — Flotacion vertical sutil (6s)
+- `glow-pulse` — Pulso de glow cyan
+- `shimmer` — Efecto shimmer en texto
+- Stagger de hijos: cascade con 80ms de delay (hasta 8 children)
+
+### Componentes UI
+
+48 componentes de **shadcn/ui** (Radix UI + Tailwind). Configuracion en `components.json`:
+- Base color: `slate`
+- CSS variables: habilitadas
+- Border radius base: `0.75rem` (`--radius`)
+- Estilo: `default` (no `new-york`)
+
+Alias de imports: `@/components/ui/*`
+
+### Archivos clave del design system
+
+| Archivo | Contenido |
+|---------|-----------|
+| `src/index.css` | Tokens CSS, efectos, animaciones, scrollbar |
+| `tailwind.config.ts` | Tipografia, colores extendidos, animaciones |
+| `components.json` | Config de shadcn/ui |
+| `src/components/ui/` | 48 componentes de UI |
+
 ## Estructura del proyecto
 
 ```
@@ -120,7 +195,9 @@ src/
   integrations/
     supabase/            # Cliente Supabase auto-generado
   pages/                 # Paginas del dashboard
-  components/            # Componentes React
+  components/
+    ui/                  # 48 componentes shadcn/ui
+    ...                  # Componentes custom del dashboard
 
 supabase/
   functions/
