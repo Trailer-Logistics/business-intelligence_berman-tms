@@ -113,94 +113,116 @@ npx supabase db push
 
 ## Design System
 
-### Tema visual
+Estructura modular en `src/styles/`, importada desde `src/index.css`:
 
-Dark mode con acentos cyan/electricos. Modelo de color HSL via CSS custom properties en `src/index.css`.
+```
+src/index.css                  ← Punto de entrada (imports + @tailwind)
+src/styles/
+  tokens.css                   ← Variables CSS (:root) — colores, radios, sidebar
+  base.css                     ← Resets, tipografia, scrollbar, seleccion
+  effects.css                  ← Glass, gradient borders, card glows, mesh
+  animations.css               ← Keyframes + clases animate-* + stagger
+  utilities.css                ← Helpers de proposito unico (glow, dot-grid, etc.)
+tailwind.config.ts             ← Mapeo de tokens a clases Tailwind
+components.json                ← Configuracion shadcn/ui
+```
+
+### Tokens de color
+
+Dark mode con acentos cyan. Modelo HSL via CSS custom properties en `tokens.css`. Se consumen como `hsl(var(--token))` en Tailwind y CSS.
 
 | Token | Valor | Uso |
 |-------|-------|-----|
-| `--background` | `hsl(222 47% 5%)` | Fondo principal (azul-gris muy oscuro) |
-| `--foreground` | `hsl(210 40% 96%)` | Texto principal (casi blanco) |
-| `--primary` | `hsl(191 100% 50%)` | Color de accion principal (cyan) |
-| `--card` | `hsl(222 40% 8%)` | Superficie de cards |
-| `--secondary` | `hsl(222 30% 12%)` | Elementos secundarios |
-| `--destructive` | `hsl(0 72% 51%)` | Acciones destructivas (rojo) |
-| `--muted` | `hsl(222 25% 11%)` | Texto/fondo atenuado |
-| `--border` | `hsl(222 25% 14%)` | Bordes |
+| `--background` | `222 47% 5%` | Fondo principal (azul-gris muy oscuro) |
+| `--foreground` | `210 40% 96%` | Texto principal (casi blanco) |
+| `--primary` | `191 100% 50%` | Accion principal (cyan) |
+| `--card` | `222 40% 8%` | Superficie de cards |
+| `--secondary` | `222 30% 12%` | Elementos secundarios |
+| `--destructive` | `0 72% 51%` | Acciones destructivas (rojo) |
+| `--muted` | `222 25% 11%` | Texto/fondo atenuado |
+| `--border` | `222 25% 14%` | Bordes |
 
-**Paleta extendida:**
-- Cyan: `hsl(191 100% 50%)` — acento principal
-- Violet: `hsl(258 90% 66%)` — acento secundario
-- Emerald: `hsl(152 69% 45%)` — exito/success
-- Amber: `hsl(38 92% 50%)` — warning
-- Rose: `hsl(340 82% 52%)` — error/alerta
+**Paleta extendida** (en `tokens.css`, mapeada en `tailwind.config.ts`):
+
+| Token | Tailwind class | Uso |
+|-------|---------------|-----|
+| `--cyan` | `text-cyan`, `bg-cyan` | Acento principal |
+| `--violet` | `text-violet`, `bg-violet` | Acento secundario |
+| `--emerald` | `text-success` | Exito |
+| `--amber` | `text-warning` | Warning |
+| `--rose` | `text-rose` | Error/alerta |
+| `--blue` | `text-electric-blue` | Datos/info |
 
 ### Tipografia
 
-| Familia | Uso | Pesos |
-|---------|-----|-------|
-| **Montserrat** | Headings (h1-h6), display | 300–900 |
-| **Inter** | Body text, UI general | 300–700 |
-| **JetBrains Mono** | Codigo, numeros, KPIs | 400–700 |
+| Familia | Tailwind | Uso | Pesos |
+|---------|----------|-----|-------|
+| **Montserrat** | `font-display` | Headings (h1-h6) | 300-900 |
+| **Inter** | `font-sans` | Body text, UI | 300-700 |
+| **JetBrains Mono** | `font-mono` | Codigo, KPIs, numeros | 400-700 |
 
-Configuradas en `tailwind.config.ts` como `font-sans` (Inter), `font-display` (Montserrat) y `font-mono` (JetBrains Mono).
+### Efectos (`effects.css`)
 
-### Efectos visuales
+| Clase | Efecto |
+|-------|--------|
+| `.glass` | Glassmorphism — backdrop-blur 24px + saturacion |
+| `.card-glow` | Hover glow cyan + elevacion (-3px) |
+| `.card-hero` | Card grande con gradiente + linea de luz superior |
+| `.gradient-border` | Borde gradiente estatico (cyan → violet) |
+| `.gradient-border-animated` | Borde gradiente rotando (4s loop) |
+| `.bg-mesh-animated` | Fondo malla radial con drift (20s) |
+| `.sidebar-active-glow` | Linea vertical gradiente para item activo |
 
-| Clase CSS | Efecto |
-|-----------|--------|
-| `.glass` | Glassmorphism — backdrop-blur 24px con saturacion |
-| `.card-glow` | Hover glow cyan con elevacion (-3px translateY) |
-| `.card-hero` | Card grande con gradiente y linea de luz superior |
-| `.gradient-border` | Borde gradiente estatico (cyan a violet) |
-| `.gradient-border-animated` | Borde gradiente rotando (4s) |
-| `.bg-mesh-animated` | Fondo de malla con gradientes radiales en movimiento (20s) |
+### Animaciones (`animations.css`)
+
+Escala de duraciones: fast=0.2s, normal=0.4-0.5s, slow=3-6s, ambient=20s.
+
+| Clase | Efecto | Duracion |
+|-------|--------|----------|
+| `.animate-fade-up` | Entrada desde abajo con opacity | 0.5s |
+| `.animate-fade-in` | Fade de opacity | 0.4s |
+| `.animate-float` | Flotacion vertical sutil | 6s loop |
+| `.animate-pulse-glow` | Pulso de box-shadow cyan | 3s loop |
+| `.animate-spin-slow` | Rotacion lenta | 20s loop |
+| `.stagger > *` | Cascade de fade-up, 80ms entre hijos | max 8 |
+
+### Utilidades (`utilities.css`)
+
+| Clase | Uso |
+|-------|-----|
 | `.text-glow-cyan` | Text-shadow con glow cyan |
-| `.glow-cyan` | Box-shadow glow cyan al 12% opacidad |
-| `.dot-grid` | Patron de puntos sutil para fondos |
-
-### Animaciones
-
-- `fade-up` / `fade-in` — Transiciones de entrada suaves
-- `float` — Flotacion vertical sutil (6s)
-- `glow-pulse` — Pulso de glow cyan
-- `shimmer` — Efecto shimmer en texto
-- Stagger de hijos: cascade con 80ms de delay (hasta 8 children)
+| `.glow-cyan` | Box-shadow glow al 12% |
+| `.dot-grid` | Patron de puntos 24px para fondos |
+| `.number-display` | Numeros tabulares (JetBrains Mono + tnum) |
 
 ### Componentes UI
 
-48 componentes de **shadcn/ui** (Radix UI + Tailwind). Configuracion en `components.json`:
-- Base color: `slate`
-- CSS variables: habilitadas
-- Border radius base: `0.75rem` (`--radius`)
-- Estilo: `default` (no `new-york`)
-
-Alias de imports: `@/components/ui/*`
-
-### Archivos clave del design system
-
-| Archivo | Contenido |
-|---------|-----------|
-| `src/index.css` | Tokens CSS, efectos, animaciones, scrollbar |
-| `tailwind.config.ts` | Tipografia, colores extendidos, animaciones |
-| `components.json` | Config de shadcn/ui |
-| `src/components/ui/` | 48 componentes de UI |
+48 componentes **shadcn/ui** (Radix UI + Tailwind) en `src/components/ui/`:
+- Base color: `slate` | Estilo: `default` | Border radius: `0.75rem`
+- Import: `@/components/ui/*`
 
 ## Estructura del proyecto
 
 ```
 src/
+  index.css                    # Punto de entrada CSS (imports modulares)
+  styles/
+    tokens.css                 # Variables CSS del design system
+    base.css                   # Resets y tipografia
+    effects.css                # Efectos visuales (glass, glow, gradients)
+    animations.css             # Keyframes y clases de animacion
+    utilities.css              # Helpers CSS
   hooks/
-    useExternalData.ts   # Hook principal para consultar vistas Supabase
+    useExternalData.ts         # Hook para consultar vistas Supabase
   integrations/
-    supabase/            # Cliente Supabase auto-generado
-  pages/                 # Paginas del dashboard
+    supabase/                  # Cliente Supabase auto-generado
+  pages/                       # Paginas del dashboard
   components/
-    ui/                  # 48 componentes shadcn/ui
-    ...                  # Componentes custom del dashboard
+    ui/                        # 48 componentes shadcn/ui
+    ...                        # Componentes custom del dashboard
 
 supabase/
   functions/
-    sync-bermann/        # Edge Function de sincronizacion
-  migrations/            # Migraciones SQL
+    sync-bermann/              # Edge Function de sincronizacion
+  migrations/                  # Migraciones SQL
 ```

@@ -1,0 +1,37 @@
+/* ================================================================
+   BASE
+   Resets globales, tipografia, scrollbar y seleccion.
+   ================================================================ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────── */
+
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(222 25% 18%); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.4); }
+
+/* ── Selection ──────────────────────────────────────────────────── */
+
+::selection {
+  background: hsl(var(--primary) / 0.3);
+  color: hsl(210 40% 98%);
+}

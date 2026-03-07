@@ -63,16 +63,27 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         cyan: {
-          glow: "hsl(var(--cyan-glow))",
-        },
-        neon: {
-          red: "hsl(var(--neon-red))",
-        },
-        electric: {
-          blue: "hsl(var(--electric-blue))",
+          DEFAULT: "hsl(var(--cyan))",
+          glow: "hsl(var(--cyan))",
         },
         violet: {
-          accent: "hsl(var(--violet-accent))",
+          DEFAULT: "hsl(var(--violet))",
+          accent: "hsl(var(--violet))",
+        },
+        emerald: {
+          DEFAULT: "hsl(var(--emerald))",
+        },
+        amber: {
+          DEFAULT: "hsl(var(--amber))",
+        },
+        rose: {
+          DEFAULT: "hsl(var(--rose))",
+        },
+        electric: {
+          blue: "hsl(var(--blue))",
+        },
+        neon: {
+          red: "hsl(var(--rose))",
         },
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",

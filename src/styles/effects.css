@@ -1,0 +1,183 @@
+/* ================================================================
+   EFFECTS
+   Glassmorphism, gradient borders, card glows, background mesh.
+   ================================================================ */
+
+/* ── Glass morphism ─────────────────────────────────────────────── */
+
+.glass {
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  background: hsl(var(--card) / 0.75);
+  border-bottom: 1px solid hsl(var(--border) / 0.6);
+}
+
+/* ── Gradient border (static) ───────────────────────────────────── */
+
+.gradient-border {
+  position: relative;
+  background: hsl(var(--card));
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--cyan) / 0.3),
+    hsl(var(--violet) / 0.15),
+    hsl(var(--border)),
+    hsl(var(--border)),
+    hsl(var(--cyan) / 0.1)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Gradient border (animated) ─────────────────────────────────── */
+
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.gradient-border-animated {
+  position: relative;
+  background: hsl(var(--card));
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.gradient-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: 16px;
+  background: conic-gradient(
+    from var(--border-angle, 0deg),
+    hsl(var(--cyan) / 0.5),
+    hsl(var(--violet) / 0.3),
+    hsl(var(--secondary) / 0.2),
+    hsl(var(--emerald) / 0.2),
+    hsl(var(--cyan) / 0.5)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: border-rotate 4s linear infinite;
+}
+
+/* ── Card glow (hover) ──────────────────────────────────────────── */
+
+.card-glow {
+  position: relative;
+  background: linear-gradient(145deg, hsl(222 40% 7.5%), hsl(222 40% 9%));
+  border: 1px solid hsl(var(--border) / 0.9);
+  border-radius: 16px;
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-glow:hover {
+  border-color: hsl(var(--primary) / 0.25);
+  box-shadow:
+    0 0 40px hsl(var(--primary) / 0.07),
+    0 8px 40px hsl(var(--background) / 0.4),
+    inset 0 1px 0 hsl(var(--primary) / 0.08);
+  transform: translateY(-3px);
+}
+
+.card-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    hsl(var(--primary) / 0.06),
+    transparent 40%
+  );
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+}
+
+.card-glow:hover::after {
+  opacity: 1;
+}
+
+/* ── Card hero ──────────────────────────────────────────────────── */
+
+.card-hero {
+  position: relative;
+  background: linear-gradient(145deg, hsl(222 40% 7%), hsl(222 35% 10%));
+  border: 1px solid hsl(var(--primary) / 0.15);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.card-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--cyan) / 0.6), hsl(var(--violet) / 0.4), transparent);
+}
+
+.card-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 20% 50%, hsl(var(--cyan) / 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, hsl(var(--violet) / 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ── Animated background mesh ───────────────────────────────────── */
+
+.bg-mesh-animated {
+  position: relative;
+}
+
+.bg-mesh-animated::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, hsl(var(--cyan) / 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, hsl(var(--violet) / 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 90%, hsl(var(--emerald) / 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: mesh-drift 20s ease-in-out infinite alternate;
+}
+
+/* ── Sidebar active indicator ───────────────────────────────────── */
+
+.sidebar-active-glow {
+  position: relative;
+}
+
+.sidebar-active-glow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, hsl(var(--cyan)), hsl(var(--violet)));
+  box-shadow: 0 0 12px hsl(var(--cyan) / 0.5), 0 0 4px hsl(var(--cyan) / 0.3);
+}
