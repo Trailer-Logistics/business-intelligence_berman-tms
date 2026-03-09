@@ -130,7 +130,7 @@ const LoginPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-[hsl(222,30%,11%)] border border-[hsl(222,25%,18%)] rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[hsl(191,100%,50%,0.5)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.1)] transition-all duration-300 text-sm"
+                  className="w-full px-4 py-3 bg-[hsl(222,30%,11%)] border border-[hsl(222,25%,18%)] rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[hsl(191,100%,50%,0.5)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.1)] transition-all duration-300 text-sm"
                   placeholder="usuario@trailerlogistics.cl"
                 />
               </div>
@@ -145,7 +145,7 @@ const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-11 bg-[hsl(222,30%,11%)] border border-[hsl(222,25%,18%)] rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[hsl(191,100%,50%,0.5)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.1)] transition-all duration-300 text-sm"
+                  className="w-full px-4 py-3 pr-11 bg-[hsl(222,30%,11%)] border border-[hsl(222,25%,18%)] rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[hsl(191,100%,50%,0.5)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.1)] transition-all duration-300 text-sm"
                   placeholder="••••••••"
                 />
                 <button
