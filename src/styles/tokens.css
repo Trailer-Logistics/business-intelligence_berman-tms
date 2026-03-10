@@ -1,65 +1,70 @@
 /* ================================================================
    DESIGN TOKENS
    Variables CSS centrales del design system.
+   Paleta: Ocean Blue  #001D39 → #0A4174 → #49769F →
+           #4E8EA2 → #6EA2B3 → #7BBDE8 → #BDD8E9
    Modelo: HSL sin funcion — se consumen como hsl(var(--token)).
    ================================================================ */
 
 @layer base {
   :root {
     /* ── Surfaces ─────────────────────────────────────────────── */
-    --background:           222 47% 5%;
-    --foreground:           210 40% 96%;
-    --card:                 222 40% 8%;
-    --card-foreground:      210 40% 96%;
-    --popover:              222 40% 8%;
-    --popover-foreground:   210 40% 96%;
+    --background:           210 100% 11%;   /* #001D39 */
+    --foreground:           203  44% 83%;   /* #BDD8E9 */
+    --card:                 211  65% 15%;   /* entre #001D39 y #0A4174 */
+    --card-foreground:      203  44% 83%;   /* #BDD8E9 */
+    --popover:              211  65% 15%;
+    --popover-foreground:   203  44% 83%;
 
     /* ── Brand / Primary ──────────────────────────────────────── */
-    --primary:              191 100% 50%;
-    --primary-foreground:   222 47% 5%;
-    --accent:               191 100% 50%;
-    --accent-foreground:    222 47% 5%;
-    --ring:                 191 100% 50%;
+    --primary:              208  72% 70%;   /* #7BBDE8 */
+    --primary-foreground:   210 100% 11%;   /* #001D39 */
+    --accent:               194  36% 47%;   /* #4E8EA2 */
+    --accent-foreground:    203  44% 83%;   /* #BDD8E9 */
+    --ring:                 208  72% 70%;   /* #7BBDE8 */
 
     /* ── Secondary ────────────────────────────────────────────── */
-    --secondary:            222 30% 12%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary:            211  55% 20%;   /* cercano a #0A4174 */
+    --secondary-foreground: 203  35% 70%;
 
     /* ── Muted ────────────────────────────────────────────────── */
-    --muted:                222 25% 11%;
-    --muted-foreground:     215 15% 50%;
+    --muted:                211  50% 17%;
+    --muted-foreground:     210  36% 48%;   /* #49769F */
 
     /* ── Destructive ──────────────────────────────────────────── */
-    --destructive:            0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive:            0  72% 51%;
+    --destructive-foreground: 0   0% 100%;
 
     /* ── Borders & Inputs ─────────────────────────────────────── */
-    --border:               222 25% 14%;
-    --input:                222 25% 14%;
+    --border:               211  55% 21%;   /* #0A4174 range */
+    --input:                211  55% 21%;
 
     /* ── Radius ───────────────────────────────────────────────── */
     --radius:               0.75rem;
 
     /* ── Sidebar ──────────────────────────────────────────────── */
-    --sidebar-background:         222 47% 5%;
-    --sidebar-foreground:         215 20% 55%;
-    --sidebar-primary:            191 100% 50%;
-    --sidebar-primary-foreground: 222 47% 5%;
-    --sidebar-accent:             222 30% 11%;
-    --sidebar-accent-foreground:  210 20% 93%;
-    --sidebar-border:             222 25% 11%;
-    --sidebar-ring:               191 100% 50%;
+    --sidebar-background:         210 100% 11%;   /* #001D39 */
+    --sidebar-foreground:         210  25% 55%;
+    --sidebar-primary:            208  72% 70%;   /* #7BBDE8 */
+    --sidebar-primary-foreground: 210 100% 11%;
+    --sidebar-accent:             211  60% 18%;   /* #0A4174 oscuro */
+    --sidebar-accent-foreground:  203  44% 83%;   /* #BDD8E9 */
+    --sidebar-border:             211  60% 14%;
+    --sidebar-ring:               208  72% 70%;
 
-    /* ── Extended palette ─────────────────────────────────────── */
-    --cyan:     191 100% 50%;
-    --violet:   258 90% 66%;
-    --emerald:  152 69% 45%;
-    --amber:     38 92% 50%;
-    --blue:     217 91% 60%;
-    --rose:     340 82% 52%;
+    /* ── Extended palette (nombres semánticos) ─────────────────── */
+    --cyan:     208  72% 70%;   /* #7BBDE8 — color interactivo principal */
+    --violet:   194  36% 47%;   /* #4E8EA2 — acento secundario teal      */
+    --sky:      196  29% 57%;   /* #6EA2B3 — tono medio                  */
+    --steel:    210  36% 48%;   /* #49769F — tono neutro                 */
+    --navy:     211  83% 24%;   /* #0A4174 — fondo profundo              */
+    --emerald:  152  69% 45%;   /* mantenido para estados success        */
+    --amber:     38  92% 50%;
+    --blue:     208  72% 70%;
+    --rose:     340  82% 52%;
 
     /* ── Semantic aliases ─────────────────────────────────────── */
-    --success:  152 69% 45%;
-    --warning:   38 92% 50%;
+    --success:  152  69% 45%;
+    --warning:   38  92% 50%;
   }
 }
