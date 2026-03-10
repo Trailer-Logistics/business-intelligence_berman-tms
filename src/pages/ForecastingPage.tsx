@@ -193,7 +193,7 @@ export default function ForecastingPage() {
                       <stop offset="100%" stopColor="#00E5FF" stopOpacity={0.03} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 20%, 18%)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 88%)" />
                   <XAxis dataKey="name" stroke="hsl(215, 15%, 55%)" fontSize={11} />
                   <YAxis stroke="hsl(215, 15%, 55%)" fontSize={11} tickFormatter={(v) => formatCLP(v)} domain={[0, () => Math.round(forecastTotal * 1.1)]} />
                   <Tooltip
@@ -233,9 +233,9 @@ export default function ForecastingPage() {
                         const { x, y: ly } = viewBox || {};
                         return (
                           <g>
-                            <rect x={(x || 0) + 4} y={(ly || 0) + 6} width={130} height={20} rx={4} fill="hsla(0, 0%, 100%, 0.12)" />
-                            <text x={(x || 0) + 10} y={(ly || 0) + 20} fill="white" fontSize={11} fontWeight={600}>
-                              Meta {formatCLP(forecastTotal)}
+                            <rect x={(x || 0) + 4} y={(ly || 0) + 5} width={140} height={18} rx={3} fill="white" stroke="hsl(0,0%,80%)" strokeWidth={1} />
+                            <text x={(x || 0) + 9} y={(ly || 0) + 18} fill="hsl(0, 85%, 45%)" fontSize={10} fontWeight={700}>
+                              Meta: {formatCLP(forecastTotal)}
                             </text>
                           </g>
                         );
@@ -257,8 +257,8 @@ export default function ForecastingPage() {
                   <Line
                     type="monotone"
                     dataKey="forecastAcc"
-                    stroke="hsl(45, 90%, 55%)"
-                    strokeWidth={2}
+                    stroke="hsl(0, 0%, 60%)"
+                    strokeWidth={1.5}
                     strokeDasharray="5 3"
                     dot={false}
                     name="Forecast Acumulado"
@@ -267,8 +267,8 @@ export default function ForecastingPage() {
                   <Line
                     type="monotone"
                     dataKey="projected"
-                    stroke="hsl(160, 70%, 50%)"
-                    strokeWidth={2}
+                    stroke="hsl(0, 0%, 75%)"
+                    strokeWidth={1.5}
                     strokeDasharray="3 3"
                     dot={false}
                     name="Venta Proyectada"

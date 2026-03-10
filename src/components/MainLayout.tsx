@@ -36,43 +36,43 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 bg-mesh-animated">
           {/* Glass header */}
-          <header className="h-12 flex items-center justify-between px-5 sticky top-0 z-20 glass">
+          <header className="h-12 flex items-center justify-between px-5 sticky top-0 z-20 bg-white border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="text-muted-foreground/60 hover:text-[hsl(191,100%,50%)] transition-colors" />
+              <SidebarTrigger className="text-black/40 hover:text-[hsl(191,100%,40%)] transition-colors" />
               <div className="hidden sm:flex items-center gap-2.5">
-                <div className="w-px h-4 bg-[hsl(222,25%,14%)]" />
-                <Activity className="w-3 h-3 text-[hsl(152,69%,45%)]" />
-                <span className="text-[10px] text-muted-foreground/50 font-mono tracking-[0.15em] uppercase">
+                <div className="w-px h-4 bg-gray-200" />
+                <Activity className="w-3 h-3 text-[hsl(152,69%,40%)]" />
+                <span className="text-[10px] text-black/40 font-mono tracking-[0.15em] uppercase">
                   {currentTitle}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
-              <button className="relative p-2 rounded-xl hover:bg-[hsl(222,30%,11%)] transition-all text-muted-foreground/50 hover:text-[hsl(191,100%,50%)]">
+              <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-all text-black/40 hover:text-[hsl(191,100%,40%)]">
                 <Bell className="w-3.5 h-3.5" strokeWidth={1.8} />
               </button>
 
-              <div className="w-px h-4 bg-[hsl(222,25%,14%)] mx-1 hidden sm:block" />
+              <div className="w-px h-4 bg-gray-200 mx-1 hidden sm:block" />
 
-              <div className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-[hsl(222,30%,11%)] transition-colors cursor-default">
+              <div className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-gray-100 transition-colors cursor-default">
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold"
                   style={{
-                    background: "linear-gradient(135deg, hsl(191 100% 50% / 0.25), hsl(258 90% 66% / 0.15))",
-                    color: "hsl(191 100% 50%)",
-                    boxShadow: "0 0 12px hsl(191 100% 50% / 0.15)",
+                    background: "linear-gradient(135deg, hsl(191 100% 50% / 0.2), hsl(258 90% 66% / 0.1))",
+                    color: "hsl(191 100% 40%)",
+                    border: "1px solid hsl(191 100% 50% / 0.3)",
                   }}
                 >
                   {userInitial}
                 </div>
-                <span className="text-[11px] text-muted-foreground/60 hidden md:inline max-w-[130px] truncate font-mono">
+                <span className="text-[11px] text-black/50 hidden md:inline max-w-[130px] truncate font-mono">
                   {user?.email}
                 </span>
               </div>
 
               <button
                 onClick={signOut}
-                className="p-2 rounded-xl hover:bg-[hsl(0,72%,51%,0.08)] transition-all text-muted-foreground/40 hover:text-[hsl(0,72%,51%)]"
+                className="p-2 rounded-xl hover:bg-red-50 transition-all text-black/30 hover:text-red-500"
                 title="Cerrar sesion"
               >
                 <LogOut className="w-3.5 h-3.5" strokeWidth={1.8} />

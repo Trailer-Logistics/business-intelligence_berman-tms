@@ -130,7 +130,7 @@ const LoginPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-[hsl(222,30%,11%)] border border-[hsl(222,25%,18%)] rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[hsl(191,100%,50%,0.5)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.1)] transition-all duration-300 text-sm"
+                  className="w-full px-4 py-3 bg-white border-2 border-[hsl(191,100%,50%)] rounded-xl text-black placeholder:text-black/40 focus:outline-none focus:border-[hsl(191,100%,45%)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.25)] hover:shadow-[0_0_0_3px_hsl(191,100%,50%,0.15)] transition-all duration-300 text-sm"
                   placeholder="usuario@trailerlogistics.cl"
                 />
               </div>
@@ -145,7 +145,7 @@ const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-11 bg-[hsl(222,30%,11%)] border border-[hsl(222,25%,18%)] rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[hsl(191,100%,50%,0.5)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.1)] transition-all duration-300 text-sm"
+                  className="w-full px-4 py-3 pr-11 bg-white border-2 border-[hsl(191,100%,50%)] rounded-xl text-black placeholder:text-black/40 focus:outline-none focus:border-[hsl(191,100%,45%)] focus:shadow-[0_0_0_3px_hsl(191,100%,50%,0.25)] hover:shadow-[0_0_0_3px_hsl(191,100%,50%,0.15)] transition-all duration-300 text-sm"
                   placeholder="••••••••"
                 />
                 <button
@@ -171,9 +171,9 @@ const LoginPage = () => {
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="w-full py-3.5 rounded-xl font-semibold text-sm text-[hsl(222,47%,6%)] transition-all duration-300 disabled:opacity-50 group relative overflow-hidden"
+              className="w-full py-3.5 rounded-xl font-semibold text-sm text-[hsl(222,47%,6%)] transition-all duration-300 disabled:opacity-50 group relative overflow-hidden hover:brightness-110 hover:shadow-[0_0_20px_hsl(191,100%,50%,0.5)] active:scale-[0.98]"
               style={{
-                background: "linear-gradient(135deg, hsl(191 100% 50%), hsl(191 80% 45%))",
+                background: "hsl(191, 100%, 50%)",
               }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">

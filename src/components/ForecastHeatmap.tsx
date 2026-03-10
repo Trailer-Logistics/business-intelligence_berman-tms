@@ -39,14 +39,15 @@ const DOW_TO_COL: Record<number, keyof ForecastRow> = {
   6: "sabado_clp",
 };
 
-function getColor(real: number, forecast: number, dow: number): string {
-  if (real === 0 && dow === 0) return "bg-primary/10 border border-primary/20";
-  if (real === 0) return "bg-muted/15 border border-border/30";
-  if (forecast === 0) return "bg-muted/20";
+function getColor(real: number, forecast: number, dow: number, isCurrentMonth: boolean): string {
+  if (!isCurrentMonth) return "";
+  if (dow === 0) return "bg-gray-300"; // domingo: gris uniforme, sin contorno
+  if (real === 0) return "bg-white border border-gray-300 rounded-lg"; // sin datos: con contorno
+  if (forecast === 0) return "bg-gray-100 rounded-lg";
   const ratio = real / forecast;
-  if (ratio >= 0.95) return "bg-success/50";
-  if (ratio >= 0.70) return "bg-warning/50";
-  return "bg-destructive/50";
+  if (ratio >= 0.95) return "bg-green-100 rounded-lg"; // >= 95%: verde tenue, sin contorno
+  if (ratio >= 0.70) return "bg-amber-100 rounded-lg"; // 70-95%: mostaza tenue, sin contorno
+  return "bg-red-100 rounded-lg"; // < 70%: rojo tenue, sin contorno
 }
 
 function hasData(cell: { real: number; forecast: number }): boolean {
@@ -193,39 +194,39 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
             {week.map((cell, ci) => (
               <div
                 key={ci}
-                className={`relative aspect-square rounded-md flex flex-col items-center justify-center transition-all cursor-default ${
-                  !cell.isCurrentMonth ? "opacity-20" : getColor(cell.real, cell.forecast, cell.dow)
+                className={`relative aspect-square rounded-lg flex flex-col items-center justify-center transition-all cursor-default ${
+                  !cell.isCurrentMonth ? "opacity-0" : getColor(cell.real, cell.forecast, cell.dow, cell.isCurrentMonth)
                 } ${cell.isCurrentMonth && hasData(cell) ? "group" : ""}`}
               >
                 {cell.isCurrentMonth && (
                   <>
-                    <span className={`text-[10px] font-medium ${hasData(cell) ? "text-foreground" : "text-muted-foreground/50"}`}>{cell.dayOfMonth}</span>
-                    <span className="text-[8px] text-foreground/70">{cell.real > 0 ? formatCLP(cell.real) : ""}</span>
+                    <span className={`text-[10px] font-medium ${hasData(cell) ? "text-gray-700" : "text-gray-400"}`}>{cell.dayOfMonth}</span>
+                    <span className="text-[8px] text-gray-600">{cell.real > 0 ? formatCLP(cell.real) : ""}</span>
 
                     {/* Tooltip - only when there's data */}
                     {hasData(cell) && (
                       <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block">
-                        <div className="card-executive p-3 shadow-xl min-w-[220px] border border-border">
-                          <p className="text-[10px] font-semibold text-foreground mb-1">{cell.date}</p>
-                          <p className="text-[10px] text-primary font-bold">Real: {formatCLP(cell.real)}</p>
-                          <p className="text-[10px] text-warning font-bold">Forecast: {formatCLP(cell.forecast)}</p>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-xl min-w-[220px]">
+                          <p className="text-[10px] font-semibold text-black mb-1">{cell.date}</p>
+                          <p className="text-[10px] text-[hsl(191,100%,35%)] font-bold">Real: {formatCLP(cell.real)}</p>
+                          <p className="text-[10px] text-amber-600 font-bold">Forecast: {formatCLP(cell.forecast)}</p>
                           {cell.forecast > 0 && (
-                            <p className="text-[10px] font-bold mb-2 text-success">
+                            <p className={`text-[10px] font-bold mb-2 ${(cell.real / cell.forecast) >= 0.95 ? "text-green-600" : (cell.real / cell.forecast) >= 0.70 ? "text-amber-600" : "text-red-600"}`}>
                               Δ {((cell.real / cell.forecast - 1) * 100).toFixed(1)}%
                             </p>
                           )}
-                          <div className="space-y-0.5 border-t border-border pt-1">
-                            <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Detalle por cliente:</p>
+                          <div className="space-y-0.5 border-t border-gray-100 pt-1">
+                            <p className="text-[9px] font-semibold text-gray-500 mb-0.5">Detalle por cliente:</p>
                             {Object.entries(cell.clientDetails)
                               .sort((a, b) => a[1].delta - b[1].delta)
                               .slice(0, 8)
                               .map(([client, detail]) => {
-                                const isRed = detail.forecast > 0 && detail.real < detail.forecast;
-                                const isGreen = detail.delta > 0;
+                                const ratio = detail.forecast > 0 ? detail.real / detail.forecast : 1;
+                                const color = ratio >= 0.95 ? "text-green-600" : ratio >= 0.70 ? "text-amber-600" : "text-red-600";
                                 return (
                                   <div key={client} className="flex justify-between text-[9px] gap-2">
-                                    <span className={`truncate ${isRed ? "text-destructive font-semibold" : isGreen ? "text-success font-semibold" : "text-muted-foreground"}`}>{client}</span>
-                                    <span className={`font-mono whitespace-nowrap ${isRed ? "text-destructive font-semibold" : isGreen ? "text-success font-semibold" : "text-muted-foreground"}`}>
+                                    <span className={`truncate font-semibold ${color}`}>{client}</span>
+                                    <span className={`font-mono whitespace-nowrap font-semibold ${color}`}>
                                       {formatCLP(detail.real)} {detail.forecast > 0 ? `(${detail.delta >= 0 ? "+" : ""}${detail.delta.toFixed(0)}%)` : ""}
                                     </span>
                                   </div>
@@ -245,10 +246,11 @@ export default function ForecastHeatmap({ forecastRows = [] }: ForecastHeatmapPr
 
       {/* Legend */}
       <div className="flex items-center gap-4 mt-4 justify-center flex-wrap">
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-destructive/50" /><span className="text-[9px] text-muted-foreground">&lt;70%</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-warning/50" /><span className="text-[9px] text-muted-foreground">70–95%</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-success/50" /><span className="text-[9px] text-muted-foreground">≥95%</span></div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-muted/15 border border-border/30" /><span className="text-[9px] text-muted-foreground">Sin datos</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-md bg-red-100" /><span className="text-[9px] text-gray-500">&lt;70%</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-md bg-amber-100" /><span className="text-[9px] text-gray-500">70–95%</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-md bg-green-100" /><span className="text-[9px] text-gray-500">≥95%</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-md bg-gray-300" /><span className="text-[9px] text-gray-500">Domingo</span></div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-md bg-white border border-gray-300" /><span className="text-[9px] text-gray-500">Sin datos</span></div>
       </div>
     </div>
   );

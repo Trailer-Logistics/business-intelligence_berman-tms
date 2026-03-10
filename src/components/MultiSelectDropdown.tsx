@@ -46,7 +46,7 @@ export default function MultiSelectDropdown({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        className="flex h-8 w-full items-center justify-between rounded-md border border-black bg-white px-2 py-1 text-xs text-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-1 hover:border-black/70 transition-colors"
       >
         <span className="truncate text-left flex-1">
           {selected.length === 0
@@ -64,7 +64,7 @@ export default function MultiSelectDropdown({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full min-w-[160px] max-h-52 overflow-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95">
+        <div className="absolute z-50 mt-1 w-full min-w-[160px] max-h-52 overflow-auto rounded-md border border-black bg-white text-black shadow-md animate-in fade-in-0 zoom-in-95">
           {options.length === 0 ? (
             <div className="px-3 py-2 text-xs text-muted-foreground">Sin opciones</div>
           ) : (
@@ -73,7 +73,7 @@ export default function MultiSelectDropdown({
                 key={opt}
                 type="button"
                 onClick={() => toggle(opt)}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-black hover:bg-black/5 transition-colors"
               >
                 <div
                   className={cn(

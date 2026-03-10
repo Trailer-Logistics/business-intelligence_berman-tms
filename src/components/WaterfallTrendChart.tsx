@@ -116,15 +116,15 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
   };
 
   const btnBase = "px-3 py-1.5 text-[11px] font-medium rounded-lg transition-all duration-200";
-  const btnActive = "bg-[hsl(191,100%,50%,0.12)] text-[hsl(191,100%,50%)] border border-[hsl(191,100%,50%,0.25)]";
-  const btnInactive = "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent";
+  const btnActive = "bg-[hsl(191,100%,50%,0.15)] text-[hsl(191,100%,35%)] border border-[hsl(191,100%,50%,0.4)]";
+  const btnInactive = "text-black/50 hover:text-black hover:bg-black/5 border border-transparent";
 
   return (
-    <div className="rounded-xl border border-[hsl(222,25%,15%)] p-5" style={{ background: "linear-gradient(145deg, hsl(222 40% 9%), hsl(222 40% 10.5%))" }}>
+    <div className="rounded-xl border border-black bg-white p-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3">
-          <TrendingUp className="w-4 h-4 text-[hsl(152,69%,45%)]" strokeWidth={1.8} />
-          <h3 className="text-sm font-semibold text-foreground">Tendencia Waterfall</h3>
+          <TrendingUp className="w-4 h-4 text-[hsl(152,69%,40%)]" strokeWidth={1.8} />
+          <h3 className="text-sm font-semibold text-black">Tendencia Waterfall</h3>
           <div className="flex gap-1 ml-2">
             <button className={`${btnBase} ${metric === "viajes" ? btnActive : btnInactive}`} onClick={() => setMetric("viajes")}>
               Viajes
@@ -160,10 +160,10 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
                 <stop offset="100%" stopColor="hsl(0, 72%, 51%)" stopOpacity={0.5} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 25%, 14%)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 85%)" vertical={false} />
             <XAxis
               dataKey="name"
-              stroke="hsl(215, 15%, 40%)"
+              stroke="hsl(0, 0%, 40%)"
               fontSize={10}
               tickLine={false}
               axisLine={false}
@@ -172,14 +172,14 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
               height={granularity === "day" ? 50 : 30}
             />
             <YAxis
-              stroke="hsl(215, 15%, 35%)"
+              stroke="hsl(0, 0%, 40%)"
               fontSize={10}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => (metric === "venta" ? formatCLP(v) : v)}
             />
             <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={0} stroke="hsl(222, 25%, 20%)" strokeDasharray="3 3" />
+            <ReferenceLine y={0} stroke="hsl(0, 0%, 60%)" strokeDasharray="3 3" />
             <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={20}>
               {waterfallData.map((entry, i) => (
                 <Cell
@@ -191,7 +191,7 @@ const WaterfallTrendChart = ({ viajes }: Props) => {
           </BarChart>
         </ResponsiveContainer>
       ) : (
-        <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">Sin datos</div>
+        <div className="flex items-center justify-center py-20 text-sm text-black/40">Sin datos</div>
       )}
     </div>
   );

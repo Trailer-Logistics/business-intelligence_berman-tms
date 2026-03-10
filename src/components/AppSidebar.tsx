@@ -58,7 +58,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    operaciones: true,
+    operaciones: false,
     activos: false,
     planilla: false,
   });
